@@ -1,0 +1,5 @@
+método,cobertura 80 %,ancho medio 80 %,cobertura 95 %,ancho medio 95 %
+SARIMAX paramétrico — validación,97.1,157.6,100.0,247.5
+SARIMAX paramétrico — prueba,54.3,125.6,75.0,196.9
+SARIMAX conformal — prueba,39.3,77.3,51.4,115.9
+LightGBM conformal — prueba,65.0,114.6,80.0,178.3

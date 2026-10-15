@@ -1,0 +1,6 @@
+modelo,MAE,RMSE,MAPE,sMAPE,n,MAE desv. orígenes,mejora vs ing. est. %
+Ingenuo,77.61,94.06,32.33,37.69,140,29.18,-16.8
+Ingenuo estacional,66.42,84.58,29.83,32.56,140,34.11,0.0
+SARIMA,59.35,73.68,26.98,28.46,140,29.04,10.6
+SARIMAX,61.84,76.11,27.54,29.73,140,29.89,6.9
+LightGBM,53.47,66.51,26.8,24.62,140,14.8,19.5
