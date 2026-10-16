@@ -1,0 +1,1 @@
+SELECT order_status,count(*) ordenes FROM orders GROUP BY 1 ORDER BY 2 DESC;

@@ -1,0 +1,1 @@
+SELECT date_trunc('week',order_purchase_timestamp)::DATE semana,count(*) ordenes FROM orders GROUP BY 1 ORDER BY 1;
