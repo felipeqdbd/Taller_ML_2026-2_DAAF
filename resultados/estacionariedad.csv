@@ -1,0 +1,4 @@
+serie,ADF_p,KPSS_p_tabla,KPSS_limite,ADF_lectura,KPSS_lectura
+nivel,0.710937511830078,0.01,<= 0.01,No rechaza raíz unitaria,Rechaza estacionariedad
+diferencia_1,4.71203545485977e-06,0.04166666666666512,0.0417,Rechaza raíz unitaria,Rechaza estacionariedad
+diferencia_7,0.0017620303963400796,0.1,>= 0.10,Rechaza raíz unitaria,No rechaza estacionariedad

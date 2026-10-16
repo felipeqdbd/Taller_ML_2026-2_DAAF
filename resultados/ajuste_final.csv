@@ -1,0 +1,2 @@
+modelo,origen,n_dias,convergencia,avisos,optimizador,AIC,regresores,Ljung_Box_p7,Ljung_Box_p14
+SARIMAX_calendario,2018-08-21,567,True,,lbfgs,-455.68802241143214,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.19145188955431486,0.30078195437442595

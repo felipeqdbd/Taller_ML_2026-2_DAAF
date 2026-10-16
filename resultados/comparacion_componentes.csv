@@ -1,0 +1,5 @@
+comparacion,referencia,candidato,diferencia_MAE,origenes_mejora,origenes
+Variables con objetivo absoluto,LGBM_base_absoluto,LGBM_amplio_absoluto,-0.461754295692505,13,30
+Variables con objetivo relativo,LGBM_base_relativo,LGBM_amplio_relativo,-2.226989480944559,17,30
+Objetivo con variables básicas,LGBM_base_absoluto,LGBM_base_relativo,14.956604903131401,12,30
+Objetivo con variables ampliadas,LGBM_amplio_absoluto,LGBM_amplio_relativo,13.191369717879349,13,30
