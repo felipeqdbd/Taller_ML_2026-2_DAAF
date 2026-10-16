@@ -1,0 +1,13 @@
+modelo,origen,n_dias,convergencia,avisos,optimizador,AIC,regresores,Ljung_Box_p7,Ljung_Box_p14
+SARIMAX_calendario,2018-03-13,406,True,,lbfgs,-290.73659007169476,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.11848854614290082,0.46600491884602735
+SARIMAX_calendario,2018-03-20,413,True,,lbfgs,-297.6735803047181,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.09206112252496287,0.40732020950564485
+SARIMAX_calendario,2018-03-27,420,True,,lbfgs,-308.9475354677785,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.08335886206782542,0.3994940855074498
+SARIMAX_calendario,2018-04-03,427,True,,lbfgs,-319.0763837377082,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.07830008464658522,0.38119571663672186
+SARIMAX_calendario,2018-04-10,434,True,,lbfgs,-328.1601341249915,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.08887345688803416,0.38895563423699064
+SARIMAX_calendario,2018-04-17,441,True,,lbfgs,-335.18126464357715,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.14118996159785088,0.5261946769326853
+SARIMAX_calendario,2018-04-24,448,True,,lbfgs,-344.74511107577933,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.20217064259287856,0.6104934446971759
+SARIMAX_calendario,2018-05-01,455,True,,lbfgs,-353.7032662605784,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.2402636075421394,0.6317251591803297
+SARIMAX_calendario,2018-05-08,462,True,,lbfgs,-362.77569319658403,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.2726750198897923,0.6446367467239231
+SARIMAX_calendario,2018-05-15,469,True,,lbfgs,-372.25350211952616,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.2499048874963907,0.620271979464659
+SARIMAX_calendario,2018-05-22,476,True,,lbfgs,-371.8220822792989,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.27533618160743606,0.6874069285806084
+SARIMAX_calendario,2018-05-29,483,True,,lbfgs,-368.4416461455953,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.3955938183771163,0.7763396233022676

@@ -1,0 +1,14 @@
+# Python 3.12. Versiones utilizadas en la ejecución entregada.
+duckdb==1.5.6
+pandas==3.0.6
+numpy==2.5.4
+matplotlib==3.10.8
+statsmodels==0.15.0
+lightgbm==4.7.0
+scikit-learn==1.8.0
+holidays==0.106
+kagglehub==1.0.2
+nbformat==5.11.1
+nbclient==0.11.0
+ipykernel==7.4.0
+reportlab==4.4.9

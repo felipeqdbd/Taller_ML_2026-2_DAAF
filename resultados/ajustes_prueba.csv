@@ -1,0 +1,41 @@
+modelo,origen,n_dias,convergencia,avisos,AIC,optimizador,regresores,Ljung_Box_p7,Ljung_Box_p14,filas_entrenamiento,ultima_etiqueta
+Ingenuo,2018-06-26,511,True,,,,,,,,
+Estacional_7,2018-06-26,511,True,,,,,,,,
+ETS_amortiguado,2018-06-26,511,True,,4050.831235606329,,,,,,
+SARIMAX_calendario,2018-06-26,511,True,,-399.9817980283159,lbfgs,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.324826750373676,0.6115648095339046,,
+LGBM_base_absoluto,2018-06-26,511,True,,,,,,,11382.0,2018-06-26
+LGBM_amplio_absoluto,2018-06-26,511,True,,,,,,,11382.0,2018-06-26
+LGBM_base_relativo,2018-06-26,511,True,,,,,,,11382.0,2018-06-26
+LGBM_amplio_relativo,2018-06-26,511,True,,,,,,,11382.0,2018-06-26
+Ingenuo,2018-07-03,518,True,,,,,,,,
+Estacional_7,2018-07-03,518,True,,,,,,,,
+ETS_amortiguado,2018-07-03,518,True,,4101.140545338827,,,,,,
+SARIMAX_calendario,2018-07-03,518,True,,-408.3108699016799,lbfgs,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.29203366088970856,0.5521557552591578,,
+LGBM_base_absoluto,2018-07-03,518,True,,,,,,,11578.0,2018-07-03
+LGBM_amplio_absoluto,2018-07-03,518,True,,,,,,,11578.0,2018-07-03
+LGBM_base_relativo,2018-07-03,518,True,,,,,,,11578.0,2018-07-03
+LGBM_amplio_relativo,2018-07-03,518,True,,,,,,,11578.0,2018-07-03
+Ingenuo,2018-07-10,525,True,,,,,,,,
+Estacional_7,2018-07-10,525,True,,,,,,,,
+ETS_amortiguado,2018-07-10,525,True,,4153.882754389094,,,,,,
+SARIMAX_calendario,2018-07-10,525,True,,-407.71431830420596,lbfgs,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.3775295500391853,0.6732599189319999,,
+LGBM_base_absoluto,2018-07-10,525,True,,,,,,,11774.0,2018-07-10
+LGBM_amplio_absoluto,2018-07-10,525,True,,,,,,,11774.0,2018-07-10
+LGBM_base_relativo,2018-07-10,525,True,,,,,,,11774.0,2018-07-10
+LGBM_amplio_relativo,2018-07-10,525,True,,,,,,,11774.0,2018-07-10
+Ingenuo,2018-07-17,532,True,,,,,,,,
+Estacional_7,2018-07-17,532,True,,,,,,,,
+ETS_amortiguado,2018-07-17,532,True,,4205.203334411859,,,,,,
+SARIMAX_calendario,2018-07-17,532,True,,-409.88671076996,lbfgs,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.27456505924656055,0.4952678950073054,,
+LGBM_base_absoluto,2018-07-17,532,True,,,,,,,11970.0,2018-07-17
+LGBM_amplio_absoluto,2018-07-17,532,True,,,,,,,11970.0,2018-07-17
+LGBM_base_relativo,2018-07-17,532,True,,,,,,,11970.0,2018-07-17
+LGBM_amplio_relativo,2018-07-17,532,True,,,,,,,11970.0,2018-07-17
+Ingenuo,2018-07-24,539,True,,,,,,,,
+Estacional_7,2018-07-24,539,True,,,,,,,,
+ETS_amortiguado,2018-07-24,539,True,,4261.731832680824,,,,,,
+SARIMAX_calendario,2018-07-24,539,True,,-414.9011263067628,lbfgs,"festivo, black_friday, post_black_friday, fin_anio, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",0.21464925556794168,0.36961156200667694,,
+LGBM_base_absoluto,2018-07-24,539,True,,,,,,,12166.0,2018-07-24
+LGBM_amplio_absoluto,2018-07-24,539,True,,,,,,,12166.0,2018-07-24
+LGBM_base_relativo,2018-07-24,539,True,,,,,,,12166.0,2018-07-24
+LGBM_amplio_relativo,2018-07-24,539,True,,,,,,,12166.0,2018-07-24

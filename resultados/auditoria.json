@@ -1,0 +1,88 @@
+{
+  "estado": "OK",
+  "comprobaciones": [
+    {
+      "comprobacion": "Serie conciliada con compras",
+      "estado": "OK",
+      "detalle": "567 días consecutivos, 97590 órdenes distintas; exportación idéntica a SQL."
+    },
+    {
+      "comprobacion": "Protocolo temporal",
+      "estado": "OK",
+      "detalle": "30/12/5 emisiones; los objetivos de las tres etapas no se cruzan; prueba ocupa los últimos 56 días."
+    },
+    {
+      "comprobacion": "Predicciones y ajustes de seleccion",
+      "estado": "OK",
+      "detalle": "6720 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda."
+    },
+    {
+      "comprobacion": "Predicciones y ajustes de calibracion",
+      "estado": "OK",
+      "detalle": "336 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda."
+    },
+    {
+      "comprobacion": "Predicciones y ajustes de prueba",
+      "estado": "OK",
+      "detalle": "1120 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda."
+    },
+    {
+      "comprobacion": "Elección reproducible",
+      "estado": "OK",
+      "detalle": "El modelo final corresponde al mínimo MAE de selección; no se elige por prueba."
+    },
+    {
+      "comprobacion": "Ventanas y variables históricas",
+      "estado": "OK",
+      "detalle": "477 orígenes y 13356 pares: medias, dispersión, rezagos, día comparable y razones conciliados."
+    },
+    {
+      "comprobacion": "Calendario de Black Friday",
+      "estado": "OK",
+      "detalle": "Coincide con el día posterior al cuarto jueves de noviembre en el calendario disponible."
+    },
+    {
+      "comprobacion": "Calendario visible en notebooks",
+      "estado": "OK",
+      "detalle": "Festivo futuro sin ventas observadas y Black Friday con indicador coherente en el calendario y en variables de entrenamiento."
+    },
+    {
+      "comprobacion": "Futuro físicamente retirado",
+      "estado": "OK",
+      "detalle": "Los ocho modelos reproducen sus 28 pronósticos en el primer origen de selección y el primero de prueba."
+    },
+    {
+      "comprobacion": "Intervalos diarios y totales",
+      "estado": "OK",
+      "detalle": "16 cuantiles por orden estadístico exacto; límites, sumas y coberturas conciliados sin reutilizar las funciones evaluadas."
+    },
+    {
+      "comprobacion": "Pronóstico histórico final",
+      "estado": "OK",
+      "detalle": "Reajuste reproducible, 28 fechas consecutivas, totales semanales coherentes y reales futuros desconocidos."
+    },
+    {
+      "comprobacion": "Notebooks ejecutados y comentados",
+      "estado": "OK",
+      "detalle": "Tres notebooks con ejecución secuencial, sin errores, comentarios y figuras incrustadas para GitHub."
+    }
+  ],
+  "notebooks": [
+    {
+      "nombre": "00_datos_y_calidad.ipynb",
+      "celdas_codigo": 6,
+      "figuras": 3
+    },
+    {
+      "nombre": "01_exploracion_temporal.ipynb",
+      "celdas_codigo": 8,
+      "figuras": 4
+    },
+    {
+      "nombre": "02_modelado_y_pronostico.ipynb",
+      "celdas_codigo": 17,
+      "figuras": 6
+    }
+  ],
+  "limite": "Comprobaciones específicas y reproducibles; no prueban ausencia universal de errores ni validez futura."
+}
