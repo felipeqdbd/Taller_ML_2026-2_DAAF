@@ -12,12 +12,12 @@ Solución autónoma de los **Módulos 0 y B** del taller de Aprendizaje Automát
 
 ## Resultados y lectura correcta
 
-- Serie: **567 días**, 97,590 compras, de 2017-02-01 a 2018-08-21.
-- Protocolo: 30 emisiones de selección, 12 de calibración y 5 de prueba. Cada emisión cubre 28 días; los orígenes avanzan semanalmente.
-- Seleccionado: **SARIMAX_calendario**, MAE 43.11 en selección y 65.82 en prueba. Referencia semanal: 67.02 en prueba. ETS_amortiguado tiene el menor MAE observado en prueba; se mantiene la elección previa.
+- Serie: **565 días**, 97,091 compras, de 2017-02-01 a 2018-08-19.
+- Protocolo: 30 emisiones de selección, 12 de calibración y 5 de prueba. Cada emisión parte de un domingo y cubre 28 días (cuatro semanas lunes–domingo); los orígenes avanzan semanalmente.
+- Seleccionado: **SARIMAX_calendario**, MAE 42.01 en selección y 61.72 en prueba. Referencia semanal: 66.42 en prueba. El seleccionado también presenta el menor MAE de prueba; esa coincidencia no se usó para elegirlo.
 - El objetivo relativo de LightGBM no mejora el promedio en este experimento. La comparación controlada queda documentada con sus resultados.
-- **Los intervalos relativos no alcanzan el 90 % nominal:** cobertura diaria 76.43% (107/140) y semanal 80.0% (16/20). No se presentan como márgenes operativamente validados al 90 %.
-- Pronóstico histórico del 22 de agosto al 18 de septiembre de 2018: **6,460.58** como suma de puntos. No equivale automáticamente a media esperada o mediana del total.
+- **Los intervalos relativos no alcanzan el 90 % nominal:** cobertura diaria 75.71% (106/140) y semanal 80.0% (16/20). No se presentan como márgenes operativamente validados al 90 %.
+- Pronóstico histórico del lunes 2018-08-20 al domingo 2018-09-16: **7,126.27** como suma de puntos. No equivale automáticamente a media esperada o mediana del total.
 - **Evaluación retrospectiva:** las fechas de prueba ya eran conocidas. No es una nueva prueba ciega ni una proyección actual de Olist.
 
 ## Reproducir

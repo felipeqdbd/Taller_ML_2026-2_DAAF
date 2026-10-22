@@ -31,6 +31,8 @@ dependencies = [
     "umap-learn",
     # Taller: consultas SQL sobre olist.duckdb
     "duckdb>=1.5.6",
+    "holidays>=0.107",
+    "reportlab>=5.0.1",
 ]
 
 [dependency-groups]

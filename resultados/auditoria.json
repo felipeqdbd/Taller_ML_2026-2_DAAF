@@ -4,7 +4,7 @@
     {
       "comprobacion": "Serie conciliada con compras",
       "estado": "OK",
-      "detalle": "567 días consecutivos, 97590 órdenes distintas; exportación idéntica a SQL."
+      "detalle": "565 días consecutivos, 97091 órdenes distintas; exportación idéntica a SQL."
     },
     {
       "comprobacion": "Protocolo temporal",
@@ -34,7 +34,7 @@
     {
       "comprobacion": "Ventanas y variables históricas",
       "estado": "OK",
-      "detalle": "477 orígenes y 13356 pares: medias, dispersión, rezagos, día comparable y razones conciliados."
+      "detalle": "475 orígenes y 13300 pares: medias, dispersión, rezagos, día comparable y razones conciliados."
     },
     {
       "comprobacion": "Calendario de Black Friday",
@@ -70,8 +70,8 @@
   "notebooks": [
     {
       "nombre": "00_datos_y_calidad.ipynb",
-      "celdas_codigo": 6,
-      "figuras": 3
+      "celdas_codigo": 7,
+      "figuras": 5
     },
     {
       "nombre": "01_exploracion_temporal.ipynb",

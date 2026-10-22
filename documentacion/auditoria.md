@@ -4,13 +4,13 @@ Se conciliaron resultados mediante SQL y cálculos independientes. Los ocho mode
 
 | Comprobación | Resultado | Evidencia |
 |---|---|---|
-| Serie conciliada con compras | OK | 567 días consecutivos, 97590 órdenes distintas; exportación idéntica a SQL. |
+| Serie conciliada con compras | OK | 565 días consecutivos, 97091 órdenes distintas; exportación idéntica a SQL. |
 | Protocolo temporal | OK | 30/12/5 emisiones; los objetivos de las tres etapas no se cruzan; prueba ocupa los últimos 56 días. |
 | Predicciones y ajustes de seleccion | OK | 6720 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda. |
 | Predicciones y ajustes de calibracion | OK | 336 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda. |
 | Predicciones y ajustes de prueba | OK | 1120 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda. |
 | Elección reproducible | OK | El modelo final corresponde al mínimo MAE de selección; no se elige por prueba. |
-| Ventanas y variables históricas | OK | 477 orígenes y 13356 pares: medias, dispersión, rezagos, día comparable y razones conciliados. |
+| Ventanas y variables históricas | OK | 475 orígenes y 13300 pares: medias, dispersión, rezagos, día comparable y razones conciliados. |
 | Calendario de Black Friday | OK | Coincide con el día posterior al cuarto jueves de noviembre en el calendario disponible. |
 | Calendario visible en notebooks | OK | Festivo futuro sin ventas observadas y Black Friday con indicador coherente en el calendario y en variables de entrenamiento. |
 | Futuro físicamente retirado | OK | Los ocho modelos reproducen sus 28 pronósticos en el primer origen de selección y el primero de prueba. |

@@ -8,11 +8,12 @@ def conectar():
     return duckdb.connect(str(ROOT/'data/olist.duckdb'), read_only=True)
 
 def consultar(con, archivo, parametros=None):
-    return con.execute((ROOT/'sql'/archivo).read_text(), parametros or []).df()
+    # UTF-8 explícito: en Windows la codificación por defecto altera los acentos.
+    return con.execute((ROOT/'sql'/archivo).read_text(encoding='utf-8'), parametros or []).df()
 
 def preparar(con, fin=FIN):
     """También admite un fin temprano: permite auditar retirando todo el futuro."""
-    serie = consultar(con, 'serie_diaria.sql', [INICIO, fin, INICIO, fin])
+    serie = consultar(con, 'serie_diaria.sql', [INICIO, fin])
     # El calendario futuro es conocido; las ventas futuras no se inventan.
     fin_cal = pd.Timestamp(fin) + pd.Timedelta(days=HORIZONTE)
     feriados = holidays.country_holidays('BR', years=range(2017,fin_cal.year+1))

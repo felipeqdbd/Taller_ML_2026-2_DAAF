@@ -27,13 +27,14 @@ def leer(nombre,fechas=()):
 con=conectar()
 serie,calendario,f=preparar(con)
 y=serie.set_index('fecha').y.asfreq('D')
-r=json.loads((R/'resumen.json').read_text())
+r=json.loads((R/'resumen.json').read_text(encoding='utf-8'))
 guardada=leer('serie_diaria',['fecha'])
 pd.testing.assert_frame_equal(serie,guardada,check_dtype=False)
 raw=con.execute('''SELECT count(*),count(DISTINCT order_id) FROM orders
  WHERE order_purchase_timestamp>=CAST(? AS DATE)
- AND order_purchase_timestamp<CAST(? AS DATE)+INTERVAL 1 DAY''',[INICIO,FIN]).fetchone()
-assert len(serie)==567 and serie.y.sum()==raw[0]==raw[1]==97590
+ AND order_purchase_timestamp<CAST(? AS DATE)+INTERVAL 1 DAY''',[INICIO,FIN]).fetchall()[0]  # fetchall cierra el resultado
+assert len(serie)==565 and serie.y.sum()==raw[0]==raw[1]==97091
+assert serie.fecha.max()==pd.Timestamp(FIN) and pd.Timestamp(FIN).dayofweek==6
 assert serie.fecha.is_unique and serie.fecha.diff().dropna().eq(pd.Timedelta(days=1)).all()
 ok('Serie conciliada con compras',f'{len(serie)} días consecutivos, {raw[0]} órdenes distintas; exportación idéntica a SQL.')
 
@@ -205,14 +206,14 @@ ok('Notebooks ejecutados y comentados','Tres notebooks con ejecución secuencial
 con.close()
 estado=dict(estado='OK',comprobaciones=checks,notebooks=notebooks,
     limite='Comprobaciones específicas y reproducibles; no prueban ausencia universal de errores ni validez futura.')
-(R/'auditoria.json').write_text(json.dumps(estado,ensure_ascii=False,indent=2))
+(R/'auditoria.json').write_text(json.dumps(estado,ensure_ascii=False,indent=2),encoding='utf-8')
 paquetes=['duckdb','pandas','numpy','matplotlib','statsmodels','lightgbm','scikit-learn',
           'holidays','nbformat','nbclient','ipykernel','reportlab','kagglehub']
 entorno=dict(python=platform.python_version(),paquetes={p:importlib.metadata.version(p) for p in paquetes},
     sha256_script_datos=hashlib.sha256((ROOT/'scripts/build_olist_duckdb.py').read_bytes()).hexdigest())
-(R/'entorno.json').write_text(json.dumps(entorno,indent=2))
+(R/'entorno.json').write_text(json.dumps(entorno,indent=2),encoding='utf-8')
 huellas={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(R.glob('*.csv'))}
-(R/'huellas_csv.json').write_text(json.dumps(huellas,indent=2))
+(R/'huellas_csv.json').write_text(json.dumps(huellas,indent=2),encoding='utf-8')
 md=['# Auditoría de la solución','',
     'Se conciliaron resultados mediante SQL y cálculos independientes. Los ocho modelos se reajustaron en dos orígenes retirando físicamente las compras posteriores. Las siguientes comprobaciones terminaron correctamente.','',
     '| Comprobación | Resultado | Evidencia |','|---|---|---|']
@@ -220,5 +221,5 @@ md += [f'| {c["comprobacion"]} | {c["estado"]} | {c["detalle"]} |' for c in chec
 md += ['', '## Alcance de la evidencia','',
     'La ausencia de discrepancias en estas comprobaciones respalda la consistencia de la ejecución. No garantiza que el modelo funcione en otros períodos. La evaluación es retrospectiva; los errores y los intervalos tienen dependencia temporal. El corte de cobertura sigue siendo una decisión analítica.','',
     'Para repetir: `python scripts/auditar.py`, después de `python scripts/ejecutar.py`. Los detalles técnicos están en `resultados/auditoria.json`; las versiones en `resultados/entorno.json`.','']
-(ROOT/'documentacion/auditoria.md').write_text('\n'.join(md))
+(ROOT/'documentacion/auditoria.md').write_text('\n'.join(md),encoding='utf-8')
 print(f'Auditoría completa: {len(checks)} grupos de comprobaciones.',flush=True)

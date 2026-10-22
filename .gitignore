@@ -1,6 +1,7 @@
 /notebooks/data
 .venv/
 /notebooks/artifacts
+/resultados/
 
 # LaTeX sources: keep PDFs only in lectures/ root
 lectures/latex/**/*.pdf

@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from IPython.display import display, Markdown
-from src.configuracion import INICIO, FIN, SELECCION, CALIBRACION, PRUEBA, NIVEL, particiones
+from src.configuracion import INICIO, CORTE, FIN, SELECCION, CALIBRACION, PRUEBA, NIVEL, particiones
 from src.datos import conectar, consultar, preparar, exportar
 pd.set_option('display.max_columns',20)
 pd.set_option('display.max_rows',35)
@@ -35,6 +35,11 @@ def figura(nombre):
     plt.tight_layout()
     plt.savefig(ROOT/'documentacion/figuras'/f'{nombre}.png',dpi=140,bbox_inches='tight')
     plt.show()
+def mostrar(tabla, titulo, nota=None):
+    """Imprime un título en lenguaje natural antes de la tabla: así cada salida se entiende sin leer el código."""
+    print(f'\\n■ {titulo}')
+    if nota: print(f'  {nota}')
+    display(tabla)
 '''
 
 guardar('00_datos_y_calidad.ipynb',[
@@ -57,9 +62,14 @@ Este notebook explica las tablas, comprueba su calidad y construye una serie dia
 
 **Ejemplo:** una compra de tres artículos sigue siendo una sola orden. Contar filas después de unir órdenes con artículos la contaría tres veces. Si además tiene dos pagos, una unión directa puede generar seis filas. Por eso el objetivo sale directamente de `orders`.'''),
 ('c','''# SQL consulta las llaves reales y cuantifica el efecto de uniones 1:N.
-display(con.sql('SHOW TABLES').df())
-llaves=consultar(con,'llaves.sql'); display(llaves); exportar(llaves,'llaves')
-relaciones=consultar(con,'relaciones.sql'); display(relaciones); exportar(relaciones,'relaciones')
+mostrar(con.sql('SHOW TABLES').df(),'Tablas disponibles en olist.duckdb',
+        'Una tabla por archivo del dataset, cargadas sin limpiar.')
+llaves=consultar(con,'llaves.sql'); exportar(llaves,'llaves')
+mostrar(llaves,'Unicidad de la llave candidata de cada tabla',
+        'repetidos > 0 indica que esa columna no identifica una fila por sí sola.')
+relaciones=consultar(con,'relaciones.sql'); exportar(relaciones,'relaciones')
+mostrar(relaciones,'Filas que produce unir orders con ítems y pagos (relaciones 1:N)',
+        'Si filas_join_* supera a ordenes, contar filas después del JOIN sobrestima las compras.')
 assert llaves.loc[llaves.tabla.eq('orders'),'repetidos'].iloc[0]==0'''),
 ('m','''## 2. Calidad y decisiones de tratamiento
 
@@ -67,37 +77,52 @@ Comprobamos fechas imposibles, ausencia de ítems/pagos, valores faltantes, rela
 
 Una entrega ausente puede ser coherente con una orden cancelada o pendiente. Una discrepancia monetaria requiere investigación, pero no significa que la compra nunca ocurrió. No eliminamos órdenes por problemas que no invalidan su fecha ni su identidad. La serie incluye todos los estados finales porque el objetivo es demanda recibida, no entregas completadas.'''),
 ('c','''# Cada tabla queda exportada para que la conclusión pueda verificarse.
-for archivo,nombre in [('calidad.sql','calidad'),('calidad_extra.sql','calidad_extra'),('estados.sql','estados')]:
+for archivo,nombre,titulo,nota in [
+    ('calidad.sql','calidad','Calidad de órdenes: fechas, ítems, pagos y conciliación monetaria',
+     'Conteo de órdenes que presentan cada problema.'),
+    ('calidad_extra.sql','calidad_extra','Faltantes y relaciones huérfanas entre tablas',
+     'Nulos en fechas y categorías, prefijos sin geolocalización e ítems sin orden/producto/vendedor.'),
+    ('estados.sql','estados','Órdenes por estado final (order_status)',None)]:
     tabla=consultar(con,archivo)
-    display(tabla); exportar(tabla,nombre)
+    mostrar(tabla,titulo,nota); exportar(tabla,nombre)
 calidad=consultar(con,'calidad.sql').iloc[0]
 assert calidad.compras_sin_fecha==0 and calidad.ids_duplicados==0
-print(f"Hay {int(calidad.ordenes):,} órdenes; {int(calidad.sin_items)} sin ítems y {int(calidad.sin_pagos)} sin pagos.")
+print(f"\\nHay {int(calidad.ordenes):,} órdenes; {int(calidad.sin_items)} sin ítems y {int(calidad.sin_pagos)} sin pagos.")
 print('Estas ausencias se documentan y no invalidan por sí mismas el conteo de compras.')'''),
 ('m','''## 3. Cobertura: distinguir ausencia de registros y demanda cero
 
-Antes de entrenar debemos definir qué tramo representa una actividad suficientemente continua. Se utiliza **2017-02-01 a 2018-08-21**. La actividad inicial es escasa; en el extremo final hay un descenso de registros y observaciones aisladas posteriores.
+Antes de entrenar debemos definir qué tramo representa una actividad suficientemente continua. La cobertura continua va de **2017-02-01 a 2018-08-21**. La actividad inicial es escasa; en el extremo final hay un descenso de registros y observaciones aisladas posteriores.
 
 Este corte es una decisión de cobertura. Las tablas por sí solas **no demuestran** si el descenso final es comercial, administrativo o una limitación de extracción. Por tanto, los resultados son condicionales al tramo elegido. No se elige el corte buscando el menor error.
 
 La inspección de cobertura usa toda la base para definir el universo del ejercicio; el diagnóstico que informa los modelos se limitará al historial anterior a la primera validación. Como estas fechas ya se han examinado, la evaluación completa es retrospectiva.'''),
 ('c','''# El calendario mensual incluye incluso meses sin órdenes.
-cobertura=consultar(con,'cobertura.sql'); display(cobertura); exportar(cobertura,'cobertura_mensual')
+cobertura=consultar(con,'cobertura.sql'); exportar(cobertura,'cobertura_mensual')
+mostrar(cobertura,'Cobertura mensual de toda la base',
+        'Órdenes y días con compras por mes; un mes con pocos días activos no es un mes de demanda normal.')
 cobertura.plot.bar(x='mes',y='ordenes',legend=False,title='Cobertura mensual del conjunto completo',rot=65)
 plt.ylabel('Órdenes'); figura('cobertura_mensual')
-cola=consultar(con,'cola.sql',['2018-08-01']); display(cola); exportar(cola,'cobertura_final')'''),
+cola=consultar(con,'cola.sql',['2018-08-01']); exportar(cola,'cobertura_final')
+mostrar(cola,'Órdenes por día desde 2018-08-01: caída de registros al final de la base',
+        f'Justifica el corte de cobertura en {CORTE}.')'''),
 ('m','''## 4. Construir una observación por día mediante SQL
 
 La consulta `serie_diaria.sql` genera todas las fechas entre los límites, cuenta compras por día y une ambas tablas. Dentro de este tramo, una fecha sin órdenes se representa con cero.
 
-Completar el calendario es esencial: un rezago de siete filas debe representar siete días. Sin esa regularidad, una media móvil de siete filas podría cubrir más de una semana. Fuera del tramo seleccionado no convertimos automáticamente la ausencia de registros en cero.'''),
+Completar el calendario es esencial: un rezago de siete filas debe representar siete días. Sin esa regularidad, una media móvil de siete filas podría cubrir más de una semana. Fuera del tramo seleccionado no convertimos automáticamente la ausencia de registros en cero.
+
+**Corte en domingo.** La consulta recibe la fecha de corte de cobertura como parámetro (`?`) y termina la serie en el **último domingo anterior o igual** a esa fecha (`corte − dayofweek(corte)`). Con el corte 2018-08-21 (martes) la serie llega al domingo 2018-08-19. Así cada origen de pronóstico cierra una semana completa y los 28 días siguientes forman cuatro semanas **lunes–domingo**; los orígenes de selección, calibración y prueba en `src/configuracion.py` también son domingos.'''),
 ('c','''# Las fechas se pasan como parámetros; no se concatenan dentro de la consulta.
-serie=consultar(con,'serie_diaria.sql',[INICIO,FIN,INICIO,FIN])
+# SQL recorta la serie al último domingo <= CORTE.
+serie=consultar(con,'serie_diaria.sql',[INICIO,CORTE])
 assert serie.fecha.is_unique and serie.y.ge(0).all()
 assert serie.fecha.diff().dropna().eq(pd.Timedelta(days=1)).all()
+assert serie.fecha.max()==pd.Timestamp(FIN) and serie.fecha.max().dayofweek==6  # termina en domingo
 exportar(serie,'serie_diaria'); con.register('serie',serie)
-resumen=con.sql('SELECT count(*) dias,sum(y) pedidos,min(y) minimo,max(y) maximo,count(*) FILTER(WHERE y=0) dias_cero FROM serie').df()
-display(resumen); exportar(resumen,'resumen_serie')
+resumen=con.sql('SELECT min(fecha) desde,max(fecha) hasta,dayname(max(fecha)) dia_final,count(*) dias,sum(y) pedidos,min(y) minimo,max(y) maximo,count(*) FILTER(WHERE y=0) dias_cero FROM serie').df()
+mostrar(resumen,'Resumen de la serie diaria del período útil',
+        f'Corte de cobertura {CORTE}; la serie termina el domingo {FIN}.')
+exportar(resumen,'resumen_serie')
 serie.plot(x='fecha',y='y',legend=False,title='Órdenes compradas por día: período útil')
 plt.ylabel('Órdenes/día'); figura('serie_diaria')
 print('Un pico es una observación que debemos explicar; no se borra automáticamente.')'''),
@@ -107,16 +132,94 @@ Estas tablas describen el contexto del negocio. Los tiempos de entrega se calcul
 
 Los compradores recurrentes se cuentan mediante `customer_unique_id`. La concentración geográfica describe dónde se compra, pero no demuestra por sí sola la causa de una variación temporal. Los atributos finales de entrega no entran al modelo de compras futuras.'''),
 ('c','''# Lecturas, filtros, uniones y agregaciones de datos crudos permanecen en SQL.
-for archivo,nombre in [('eda_entregas.sql','eda_entregas'),('eda_geografia.sql','eda_geografia'),
-                      ('eda_clientes.sql','eda_clientes'),('eda_semanal.sql','eda_semanal')]:
-    tabla=consultar(con,archivo); display(tabla); exportar(tabla,nombre)
+for archivo,nombre,titulo,nota in [
+    ('eda_entregas.sql','eda_entregas','Tiempos de entrega y proporción de órdenes tardías',
+     'Solo órdenes entregadas; el retraso se mide en días calendario frente a la fecha estimada.'),
+    ('eda_geografia.sql','eda_geografia','Registros de clientes y vendedores por estado',
+     'customers cuenta customer_id (un registro por orden), no personas: la sección 5.1 usa customer_unique_id.'),
+    ('eda_clientes.sql','eda_clientes','Clientes reales (customer_unique_id) según su número de compras',
+     'Muestra cuántas personas compran una, dos o más veces.'),
+    ('eda_semanal.sql','eda_semanal','Órdenes por semana en toda la base',
+     'Cada semana inicia el lunes (date_trunc week), igual que las semanas de pronóstico.')]:
+    tabla=consultar(con,archivo); mostrar(tabla,titulo,nota); exportar(tabla,nombre)
 distribuciones=consultar(con,'eda_distribuciones.sql'); exportar(distribuciones,'distribuciones_entrega')
 fig,axes=plt.subplots(1,2,figsize=(13,4))
 for eje,(tipo,g) in zip(axes,distribuciones.groupby('tipo',sort=False)):
     g.plot.bar(x='intervalo',y='ordenes',ax=eje,legend=False,title=tipo,rot=35)
     eje.set_ylabel('Órdenes')
-figura('distribuciones_entrega')
-con.close()'''),
+figura('distribuciones_entrega')'''),
+('m','''### 5.1 Geografía del cliente: dónde compran y qué tipo de cliente predomina
+
+La tabla `customers` tiene un registro por orden; para hablar de **personas** agregamos por `customer_unique_id`. Si alguien compró desde varios estados, se le asigna el de su compra más reciente. Solo se usan compras del período útil (las mismas fechas de la serie, pasadas como parámetros).
+
+- **Mapa.** `geolocation` tiene varias coordenadas por prefijo postal: se promedian por prefijo **antes** de unir (evita multiplicar filas) y se descartan coordenadas fuera de Brasil.
+- **Segmentos descriptivos.** *Recurrente* (2 o más compras), *Única compra · gasto alto* (gasto ≥ percentil 75 de todos los clientes) y *Única compra · gasto bajo-medio*. Los pagos se suman por orden antes del cruce porque `order_payments` es 1:N. No es la segmentación del Módulo C: solo describe la composición de la demanda por zona.
+
+Para la serie de tiempo esto importa porque la demanda total es una suma de regiones muy desiguales: lo que pase en la región dominante explica buena parte de los picos y caídas.'''),
+('c',"""# SQL lee, une y agrega por prefijo, estado y región; pandas y matplotlib solo dan forma y dibujan.
+from matplotlib.colors import LinearSegmentedColormap, LogNorm
+mapa=consultar(con,'eda_mapa_clientes.sql',[INICIO,FIN]); exportar(mapa,'eda_mapa_clientes')
+segmentos=consultar(con,'eda_segmentos_region.sql',[INICIO,FIN]); exportar(segmentos,'eda_segmentos_region')
+con.register('mapa',mapa); con.register('segmentos',segmentos)
+por_region=con.sql('''SELECT region,segmento,sum(clientes) clientes,
+ round(100*sum(clientes)/sum(sum(clientes)) OVER (PARTITION BY region),1) pct_region,
+ round(sum(gasto_promedio*clientes)/sum(clientes),2) gasto_promedio
+ FROM segmentos GROUP BY 1,2 ORDER BY 1,2''').df()
+por_estado=con.sql('''SELECT estado,any_value(region) region,sum(clientes) clientes,
+ round(100*coalesce(sum(clientes) FILTER(WHERE segmento='Recurrente'),0)/sum(clientes),2) pct_recurrentes,
+ round(sum(gasto_promedio*clientes)/sum(clientes),2) gasto_promedio
+ FROM segmentos GROUP BY 1 ORDER BY clientes DESC''').df()
+exportar(por_region,'eda_segmentos_por_region'); exportar(por_estado,'eda_clientes_por_estado')
+mostrar(por_region,'Segmentos de clientes por región de Brasil',
+        'pct_region = participación del segmento dentro de la región; gasto_promedio en BRL por cliente.')
+mostrar(por_estado,'Clientes únicos, recurrencia y gasto promedio por estado',
+        'Ordenado de mayor a menor número de clientes.')
+
+# Mapa: cada punto es un prefijo postal; el color (escala log) indica cuántos clientes compran desde allí.
+azules=LinearSegmentedColormap.from_list('azules',['#cde2fb','#86b6ef','#2a78d6','#1c5cab','#0d366b'])
+etiquetas=con.sql('''SELECT estado,sum(lng*clientes)/sum(clientes) lng,sum(lat*clientes)/sum(clientes) lat
+ FROM mapa GROUP BY 1 ORDER BY sum(clientes) DESC LIMIT 6''').df()
+fig,ax=plt.subplots(figsize=(7.5,7.5))
+puntos=ax.scatter(mapa.lng,mapa.lat,c=mapa.clientes,s=3+mapa.clientes**0.5,cmap=azules,norm=LogNorm(),linewidths=0)
+for fila in etiquetas.itertuples():
+    ax.annotate(fila.estado,(fila.lng,fila.lat),xytext=(8,8),textcoords='offset points',
+                fontsize=10,fontweight='bold',color='#0b0b0b')
+ax.set_aspect('equal'); ax.grid(False)
+ax.set(xlabel='Longitud',ylabel='Latitud',title='¿Desde dónde compran los clientes? (prefijos postales, período útil)')
+fig.colorbar(puntos,ax=ax,shrink=0.6,label='Clientes únicos por prefijo (escala log)')
+figura('mapa_clientes')
+
+# Barras: volumen por estado (izquierda) y composición de segmentos por región (derecha, 100 %).
+nombres=['Única compra · gasto bajo-medio','Única compra · gasto alto','Recurrente']
+colores=['#2a78d6','#eb6834','#1baf7a']
+regiones=['Sul','Sudeste','Centro-Oeste','Nordeste','Norte']  # de sur a norte: Norte queda arriba
+fig,(ax1,ax2)=plt.subplots(1,2,figsize=(15,7.5),gridspec_kw={'width_ratios':[1,1.3]})
+orden=por_estado.sort_values('clientes')
+ax1.barh(orden.estado+' · '+orden.region,orden.clientes,color='#2a78d6',height=0.7)
+for y_,v in list(enumerate(orden.clientes))[-3:]:
+    ax1.text(v,y_,f' {v:,.0f}',va='center',fontsize=9,color='#52514e')
+ax1.set(title='Clientes únicos por estado',xlabel='Clientes únicos'); ax1.grid(axis='y',visible=False)
+tabla=por_region.pivot(index='region',columns='segmento',values='pct_region').reindex(regiones)[nombres]
+izquierda=np.zeros(len(tabla))
+for nombre,color in zip(nombres,colores):
+    ancho=tabla[nombre].to_numpy()
+    ax2.barh(tabla.index,ancho,left=izquierda,color=color,edgecolor='white',linewidth=2,height=0.6,label=nombre)
+    for y_,(x0,w) in enumerate(zip(izquierda,ancho)):
+        if w>=6: ax2.text(x0+w/2,y_,f'{w:.0f}%',ha='center',va='center',fontsize=10,color='#0b0b0b')
+    izquierda+=ancho
+for y_,pct in enumerate(tabla['Recurrente']):
+    ax2.text(101,y_,f'recurrentes {pct:.1f}%',va='center',fontsize=9,color='#52514e')
+ax2.set(xlim=(0,122),xticks=range(0,101,20),xlabel='% de clientes de la región',title='Segmentos de clientes por región')
+ax2.grid(axis='y',visible=False)
+ax2.legend(loc='upper center',bbox_to_anchor=(0.45,-0.09),ncol=3,frameon=False)
+figura('segmentos_region')
+
+sudeste=con.execute("SELECT round(100*sum(clientes) FILTER(WHERE region='Sudeste')/sum(clientes),1) FROM segmentos").fetchone()[0]
+print(f'El Sudeste concentra el {sudeste}% de los clientes únicos del período útil.')
+print('La demanda diaria agregada está dominada por esa región: un choque local allí mueve la serie completa.')
+print('En Norte y Nordeste pesa más el segmento de gasto alto (el flete encarece la compra lejos de los vendedores);')
+print('la recurrencia es baja (≈3 %) en todas las regiones, así que la demanda depende de captar compradores nuevos.')
+con.close()"""),
 ('m','''## 6. Comprobar que entendimos
 
 **¿Por qué no usamos solamente órdenes entregadas?** Porque su estado final depende de hechos posteriores a la compra y definiría otro objetivo: compras que terminaron entregadas.
@@ -267,7 +370,7 @@ protocolo=dict(inicio=INICIO,fin=FIN,nivel=NIVEL,modelos=MODELOS,config_ml=CONFI
     criterio='MAE sobre pares origen-horizonte de selección; desempate alfabético',
     intervalo_principal='relativo; absoluto como análisis paralelo sin selección en prueba',
     interpretacion='Evaluación retrospectiva de datos previamente conocidos')
-(ROOT/'resultados/protocolo.json').write_text(json.dumps(protocolo,ensure_ascii=False,indent=2))
+(ROOT/'resultados/protocolo.json').write_text(json.dumps(protocolo,ensure_ascii=False,indent=2),encoding='utf-8')
 print(f'{len(serie)} días; {len(variables)} pares origen-horizonte para ML.')
 print(f'{len(SELECCION)} emisiones de selección, {len(CALIBRACION)} de calibración y {len(PRUEBA)} de prueba.')'''),
 ('m','''## 1. Convertir la serie en ejemplos supervisados
@@ -383,7 +486,7 @@ from statsmodels.graphics.tsaplots import plot_acf
 _,detalle_sar=predecir('SARIMAX_calendario',y,variables,calendario,SELECCION[0],detalles=True)
 residuos=np.asarray(detalle_sar.pop('residuos'))
 coeficientes=detalle_sar.pop('coeficientes')
-(ROOT/'resultados/diagnostico_sarimax.json').write_text(json.dumps(detalle_sar,ensure_ascii=False,indent=2))
+(ROOT/'resultados/diagnostico_sarimax.json').write_text(json.dumps(detalle_sar,ensure_ascii=False,indent=2),encoding='utf-8')
 display(aj_sel[aj_sel.modelo.eq('SARIMAX_calendario')][['origen','convergencia','optimizador','Ljung_Box_p7','Ljung_Box_p14']])
 fig,ax=plt.subplots(1,2,figsize=(13,4))
 ax[0].plot(residuos); ax[0].axhline(0,color='black',linewidth=.7); ax[0].set_title('Innovaciones estandarizadas: primer origen')
@@ -553,7 +656,7 @@ resumen=dict(inicio=INICIO,fin=FIN,ganador=ganador,mejor_ml=mejor_ml,
     cobertura_semanal=float(cs.cobertura),cubiertos_semanales=int(cs.cubiertos),n_semanales=int(cs.n),
     total_puntos_28_dias=float(final.pred.sum()),n_dias=len(serie),total_pedidos=int(serie.y.sum()),
     interpretacion='Retrospectiva; los datos de prueba ya eran conocidos. Sin garantía de cobertura futura.')
-(ROOT/'resultados/resumen.json').write_text(json.dumps(resumen,ensure_ascii=False,indent=2))
+(ROOT/'resultados/resumen.json').write_text(json.dumps(resumen,ensure_ascii=False,indent=2),encoding='utf-8')
 display(Markdown(f"""**Selección:** {ganador}, MAE {resumen['MAE_seleccion']:.2f} pedidos.\n\n
 **Prueba:** MAE {resumen['MAE_prueba']:.2f}; referencia semanal {resumen['MAE_estacional_prueba']:.2f}.\n\n
 **Incertidumbre relativa:** cobertura diaria {cd.cobertura:.1%} ({int(cd.cubiertos)}/{int(cd.n)} pares);

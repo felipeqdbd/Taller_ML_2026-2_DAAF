@@ -5,7 +5,7 @@ Todas las cifras proceden de CSV/JSON ejecutados. El PDF es una síntesis de
 """
 from pathlib import Path
 from xml.sax.saxutils import escape
-import json
+import json,sys
 import numpy as np
 import pandas as pd
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle,Image,PageBreak
@@ -17,9 +17,15 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+from src.configuracion import CORTE,FIN,HORIZONTE,SELECCION,CALIBRACION,PRUEBA
 R=ROOT/'resultados';D=ROOT/'documentacion'
-r=json.loads((R/'resumen.json').read_text())
-audit=json.loads((R/'auditoria.json').read_text())
+# Las fechas del protocolo salen de la configuración: orígenes en domingo, semanas lunes-domingo.
+def dia(f):return pd.Timestamp(f).strftime('%Y-%m-%d')
+def objetivos(origenes):return dia(origenes[0]+pd.Timedelta(days=1)),dia(origenes[-1]+pd.Timedelta(days=HORIZONTE))
+final_desde=dia(pd.Timestamp(FIN)+pd.Timedelta(days=1));final_hasta=dia(pd.Timestamp(FIN)+pd.Timedelta(days=HORIZONTE))
+r=json.loads((R/'resumen.json').read_text(encoding='utf-8'))
+audit=json.loads((R/'auditoria.json').read_text(encoding='utf-8'))
 def leer(nombre):return pd.read_csv(R/f'{nombre}.csv')
 def fmt(v):
     if pd.isna(v):return '—'
@@ -46,10 +52,30 @@ imp=leer('importancia_variables')
 entrega=leer('eda_entregas').iloc[0]
 clientes=leer('eda_clientes');recurrentes=int(clientes.loc[clientes.compras.gt(1),'clientes'].sum());nclientes=int(clientes.clientes.sum())
 geo=leer('eda_geografia');sp=int(geo.loc[geo.poblacion.eq('clientes')&geo.estado.eq('SP'),'registros'].iloc[0])
-sar=json.loads((R/'diagnostico_sarimax.json').read_text())
+geo_est=leer('eda_clientes_por_estado');geo_reg=leer('eda_segmentos_por_region')
+peso_sudeste=geo_est.loc[geo_est.region.eq('Sudeste'),'clientes'].sum()/geo_est.clientes.sum()
+alto=geo_reg[geo_reg.segmento.eq('Única compra · gasto alto')].set_index('region').pct_region
+rec=geo_reg[geo_reg.segmento.eq('Recurrente')].pct_region
+lectura_geo=(f'El Sudeste reúne {peso_sudeste:.1%} de los clientes únicos del período útil. La recurrencia va de {rec.min():.1f} % a {rec.max():.1f} % según la región, '
+             f'y el segmento de única compra con gasto alto pesa más en Norte ({alto["Norte"]:.0f} %) y Nordeste ({alto["Nordeste"]:.0f} %) que en Sudeste ({alto["Sudeste"]:.0f} %).')
+sar=json.loads((R/'diagnostico_sarimax.json').read_text(encoding='utf-8'))
 # Ejemplo concreto de desacierto relativo, seleccionado para explicar su limitación.
 p_sel=leer('predicciones_seleccion')
-ej_rel=p_sel[(p_sel.origen=='2017-11-28')&(p_sel.fecha=='2017-12-24')&p_sel.modelo.str.startswith('LGBM')][['modelo','real','pred']]
+fecha_ej='2017-12-24';origen_ej=dia(pd.Timestamp(fecha_ej)-pd.Timedelta(days=HORIZONTE))
+ej_rel=p_sel[(p_sel.origen==origen_ej)&(p_sel.fecha==fecha_ej)&p_sel.modelo.str.startswith('LGBM')][['modelo','real','pred']]
+# Lecturas que dependen de los resultados: se redactan a partir de las tablas, no a mano.
+lect=est.set_index('serie')
+def lectura_est(s):return f"ADF {lect.loc[s,'ADF_lectura'].lower()} y KPSS {lect.loc[s,'KPSS_lectura'].lower()}"
+comp=abl.set_index('comparacion')
+def cambio(nombre):
+    f=comp.loc[nombre];d=f.diferencia_MAE
+    return f"{'reduce' if d<0 else 'aumenta'} el MAE en {abs(d):.2f} pedidos (mejora en {int(f.origenes_mejora)} de {int(f.origenes)} orígenes)"
+relativo_peor=bool((comp.loc[['Objetivo con variables básicas','Objetivo con variables ampliadas'],'diferencia_MAE']>0).all())
+def lectura_minimo(negrita=True):
+    b='**' if negrita else ''
+    if minimo_test.modelo==r['ganador']:
+        return 'El seleccionado también presenta el menor MAE de prueba; esa coincidencia no se usó para elegirlo.'
+    return f'{b}{minimo_test.modelo}{b} presenta el menor MAE de prueba ({minimo_test.MAE:.2f}), pero no se redefine el ganador usando esa información.'
 
 lectura=f'''## 20. Lectura detallada de los resultados de esta ejecución
 
@@ -65,11 +91,13 @@ En las {int(entrega.observaciones):,} entregas incluidas por la consulta, la med
 
 Hay {recurrentes:,} compradores con más de una compra entre {nclientes:,} identificadores únicos, aproximadamente {recurrentes/nclientes:.2%}. São Paulo reúne {sp:,} registros de cliente asociados a compras; no deben confundirse con compradores únicos. Estas cifras contextualizan el conjunto y no son entradas futuras del modelo.
 
+{lectura_geo} La demanda agregada depende, por tanto, de lo que ocurra en una región dominante.
+
 ### 20.2. Diagnóstico inicial
 
 {tabla_md(est[['serie','ADF_p','KPSS_limite','ADF_lectura','KPSS_lectura']].assign(ADF_p=lambda d:d.ADF_p.map(lambda x:f'{x:.6g}')))}
 
-En nivel, ADF no rechaza raíz unitaria y KPSS rechaza estacionariedad. En primera diferencia, ambos rechazan sus hipótesis respectivas: no hay una lectura única de «todo resuelto». En diferencia semanal, ADF rechaza raíz unitaria y KPSS no rechaza estacionariedad. Estas lecturas se restringen al historial inicial y a las especificaciones ensayadas.
+En nivel, {lectura_est('nivel')}. En primera diferencia, {lectura_est('diferencia_1')}. En diferencia semanal, {lectura_est('diferencia_7')}. Estas lecturas se restringen al historial inicial y a las especificaciones ensayadas.
 
 En el primer SARIMAX, Ljung–Box arroja p={sar['Ljung_Box_p7']:.4f} a rezago 7 y p={sar['Ljung_Box_p14']:.4f} a 14. Al umbral convencional de 5 % no se rechaza en esos dos casos, pero el primero está cerca del umbral. Esto no demuestra residuos independientes ni adecuación universal. Los demás orígenes están registrados en las tablas de ajustes; la convergencia se verificó en todos los ajustes de la ejecución.
 
@@ -85,19 +113,19 @@ Black Friday domina varios errores extremos: el 24 de noviembre de 2017 hubo 1.1
 
 {tabla_md(abl[['comparacion','diferencia_MAE','origenes_mejora','origenes']])}
 
-La diferencia es MAE del candidato menos MAE de la referencia: negativo favorece al candidato. Las variables ampliadas reducen modestamente el error promedio con objetivo absoluto y más con objetivo relativo, pero no ganan en todos los orígenes. El objetivo relativo aumenta el MAE en ambas familias de variables. La hipótesis de que escalar respecto al nivel reciente ayudaría no queda respaldada por este experimento.
+La diferencia es MAE del candidato menos MAE de la referencia: negativo favorece al candidato. Con objetivo absoluto, pasar a variables ampliadas {cambio('Variables con objetivo absoluto')}; con objetivo relativo, {cambio('Variables con objetivo relativo')}. Cambiar al objetivo relativo {cambio('Objetivo con variables básicas')} con variables básicas y {cambio('Objetivo con variables ampliadas')} con ampliadas. {'La hipótesis de que escalar respecto al nivel reciente ayudaría no queda respaldada por este experimento.' if relativo_peor else 'El efecto del objetivo relativo depende de la familia de variables.'}
 
 Un ejemplo muestra que la adaptación relativa puede fallar de forma importante:
 
 {tabla_md(ej_rel)}
 
-Estas son predicciones emitidas el 28 de noviembre para el 24 de diciembre de 2017. El desacierto relativo es observable; atribuirlo a una sola variable requeriría otra investigación. No se afirma que toda transformación relativa sea inferior en cualquier serie.
+Estas son predicciones emitidas el {origen_ej} para el {fecha_ej}. El desacierto relativo es observable; atribuirlo a una sola variable requeriría otra investigación. No se afirma que toda transformación relativa sea inferior en cualquier serie.
 
 ### 20.5. Evaluación retrospectiva
 
 {tabla_md(mt[['modelo','MAE','RMSE','sMAPE','sesgo']])}
 
-El elegido obtiene MAE **{r['MAE_prueba']:.2f}**, frente a **{r['MAE_estacional_prueba']:.2f}** de la referencia semanal: una diferencia aproximada de **{mejora:.2f} %**. Es pequeña y no demuestra superioridad general. **{minimo_test.modelo}** presenta el menor MAE de prueba ({minimo_test.MAE:.2f}), pero no se redefine el ganador usando esa información.
+El elegido obtiene MAE **{r['MAE_prueba']:.2f}**, frente a **{r['MAE_estacional_prueba']:.2f}** de la referencia semanal: una diferencia aproximada de **{mejora:.2f} %**. Es pequeña y no demuestra superioridad general. {lectura_minimo()}
 
 El sesgo del seleccionado es **{sesgo:.2f} pedidos**: en promedio pronosticó por debajo de lo observado. Su MAE posterior supera al de selección; el desempeño no se trasladó de forma uniforme entre períodos. No puede atribuirse la discrepancia exclusivamente a un evento sin evidencia adicional.
 
@@ -139,29 +167,30 @@ La importancia por ganancia del mejor LightGBM coloca en sus primeros lugares {'
 
 Se completaron **{len(audit['comprobaciones'])} grupos de comprobaciones**, incluidos los ocho modelos con futuro físicamente retirado en dos orígenes. Los tres notebooks tienen ejecución secuencial, comentarios, figuras incorporadas y ningún error de celda. La auditoría respalda la consistencia de cifras y procedimientos, no la suficiencia predictiva para cualquier uso.
 '''
-base=(D/'guia_completa.md').read_text().split('## 20. Lectura detallada')[0].rstrip()
-(D/'guia_completa.md').write_text(base+'\n\n'+lectura+'\n')
+base=(D/'guia_completa.md').read_text(encoding='utf-8').split('## 20. Lectura detallada')[0].rstrip()
+(D/'guia_completa.md').write_text(base+'\n\n'+lectura+'\n',encoding='utf-8')
 
 secciones=[]
 def seccion(titulo,textos=(),tablas=(),figuras=()):
     secciones.append(dict(titulo=titulo,textos=list(textos),tablas=list(tablas),figuras=list(figuras)))
 seccion('1. Problema y protocolo',[
- 'Pronosticar órdenes recibidas por día durante los siguientes 28 días, desde el cierre de cada martes. Alcance: Módulo 0 y Módulo B. La unidad es la orden; la fecha es la compra. El conteo incluye todos los estados finales.',
- 'Período útil: 2017-02-01 a 2018-08-21. El corte responde a cobertura y no demuestra una causa específica para la caída de registros al final. Toda la evaluación es retrospectiva: las fechas de prueba ya eran conocidas.',
+ 'Pronosticar órdenes recibidas por día durante los siguientes 28 días, desde el cierre de cada domingo: cada emisión cubre cuatro semanas completas de lunes a domingo. Alcance: Módulo 0 y Módulo B. La unidad es la orden; la fecha es la compra. El conteo incluye todos los estados finales.',
+ f'Período útil: {r["inicio"]} a {FIN}. La cobertura continua llega a {CORTE}; la serie se corta en el último domingo anterior o igual a esa fecha. El corte responde a cobertura y no demuestra una causa específica para la caída de registros al final. Toda la evaluación es retrospectiva: las fechas de prueba ya eran conocidas.',
  f'Selección: {r["ganador"]}, MAE {r["MAE_seleccion"]:.2f}. Prueba: MAE {r["MAE_prueba"]:.2f}, frente a {r["MAE_estacional_prueba"]:.2f} de la referencia semanal. La cobertura diaria relativa fue {principal.cobertura:.1%}, inferior al 90 % nominal.',
  'Los modelos se reajustan en cada emisión. Los objetivos no se cruzan entre etapas; dentro de cada una se solapan las ventanas. No se considera que todos los pares sean independientes.'
 ],[(pd.DataFrame([
- ['Selección','2017-07-26','2018-03-13',30],['Calibración','2018-03-14','2018-06-26',12],['Prueba','2018-06-27','2018-08-21',5]],
+ ['Selección',*objetivos(SELECCION),len(SELECCION)],['Calibración',*objetivos(CALIBRACION),len(CALIBRACION)],['Prueba',*objetivos(PRUEBA),len(PRUEBA)]],
  columns=['Etapa','Objetivos desde','Objetivos hasta','Emisiones']),'Fechas objetivo del protocolo')],['protocolo_temporal'])
 seccion('2. Datos, calidad y cobertura',[
  'Se consulta DuckDB en modo de solo lectura. SQL realiza lecturas, uniones, filtros, agregaciones y ventanas de datos. La serie nace de orders sin multiplicar compras mediante artículos ni pagos.',
- 'El calendario diario completo representa ceros si falta actividad dentro del intervalo. Se obtienen 567 días y 97.590 órdenes; la auditoría concilia sus valores. Las fechas extremas se inspeccionan antes de definir el universo del ejercicio.',
- f'EDA común: mediana de entrega {entrega.mediana_dias_entrega:.0f} días, p90 {entrega.p90_dias_entrega:.0f} y {entrega.proporcion_tarde:.2%} tardías en las observaciones elegibles. Los compradores con varias compras son {recurrentes:,} de {nclientes:,} identidades únicas. Los atributos finales de entrega no son predictores.'
-],[(pd.DataFrame([['Órdenes en la base',99441],['Filas de unión directa ítems y pagos',118434],['Órdenes sin ítems',775],['Órdenes sin pagos',1],['Diferencias monetarias > 2 centavos',280],['Compras sin fecha / IDs duplicados','0 / 0']],columns=['Comprobación','Resultado']),'Calidad relevante al objetivo')],['serie_diaria'])
+ f'El calendario diario completo representa ceros si falta actividad dentro del intervalo. Se obtienen {r["n_dias"]} días y {r["total_pedidos"]:,} órdenes; la auditoría concilia sus valores. Las fechas extremas se inspeccionan antes de definir el universo del ejercicio.',
+ f'EDA común: mediana de entrega {entrega.mediana_dias_entrega:.0f} días, p90 {entrega.p90_dias_entrega:.0f} y {entrega.proporcion_tarde:.2%} tardías en las observaciones elegibles. Los compradores con varias compras son {recurrentes:,} de {nclientes:,} identidades únicas. Los atributos finales de entrega no son predictores.',
+ f'Geografía del cliente (customer_unique_id): {lectura_geo}'
+],[(pd.DataFrame([['Órdenes en la base',99441],['Filas de unión directa ítems y pagos',118434],['Órdenes sin ítems',775],['Órdenes sin pagos',1],['Diferencias monetarias > 2 centavos',280],['Compras sin fecha / IDs duplicados','0 / 0']],columns=['Comprobación','Resultado']),'Calidad relevante al objetivo')],['serie_diaria','segmentos_region'])
 seccion('3. Diagnóstico temporal inicial',[
- 'Se estudian solo 175 días, hasta 2017-07-25. Las medias móviles SQL terminan en la fecha observada. El patrón semanal se resume por medias y medianas; no se interpreta causalmente.',
+ f'Se estudian solo {sar["n_dias"]} días, hasta {sar["origen"]}. Las medias móviles SQL terminan en la fecha observada. El patrón semanal se resume por medias y medianas; no se interpreta causalmente.',
  'STL robusta con período 7 separa tendencia, semana y residuo para descripción. Sus componentes no se usan como variables porque la descomposición puede utilizar vecinos posteriores dentro del tramo.',
- 'ADF y KPSS parten de hipótesis distintas. Nivel: ADF no rechaza raíz unitaria y KPSS rechaza estacionariedad. Diferencia semanal: ADF rechaza y KPSS no rechaza. Las pruebas orientan; no determinan un único modelo.'
+ f'ADF y KPSS parten de hipótesis distintas. Nivel: {lectura_est("nivel")}. Diferencia semanal: {lectura_est("diferencia_7")}. Las pruebas orientan; no determinan un único modelo.'
 ],[(est[['serie','ADF_p','KPSS_limite']].assign(ADF_p=lambda d:d.ADF_p.map(lambda x:f'{x:.6g}')),'Pruebas de estacionariedad')],['acf_pacf_inicial'])
 seccion('4. Variables y prevención de fuga',[
  'Cada ejemplo representa origen o y horizonte h. La historia termina en o, la fecha objetivo es o+h y su calendario sí es conocido. El objetivo real nunca forma parte de las entradas.',
@@ -181,13 +210,13 @@ seccion('5. Candidatos y selección',[
  (abl[['comparacion','diferencia_MAE','origenes_mejora']],'Factores ML: diferencia negativa favorece al candidato')])
 seccion('6. Variación entre períodos y errores',[
  'Las diferencias por origen importan: un promedio puede ocultar episodios malos. Las emisiones solapadas no se tratan como observaciones independientes para declarar significancia estadística.',
- 'Las variables ampliadas ayudan modestamente al ML absoluto, pero el objetivo relativo empeora el promedio en esta ejecución. Esa conclusión está limitada a candidatos, configuración y protocolo evaluados.',
+ f'Con objetivo absoluto, pasar a variables ampliadas {cambio("Variables con objetivo absoluto")}; el objetivo relativo {"empeora" if relativo_peor else "no empeora de forma uniforme"} el promedio en esta ejecución. Esa conclusión está limitada a candidatos, configuración y protocolo evaluados.',
  'El calendario informa la fecha de un evento, no su magnitud. Se conserva la huelga y no se proporciona un indicador futuro que simule conocimiento previo. Las comparaciones de eventos son descriptivas.',
  'Ljung–Box y la ACF residual examinan estructura remanente. Un ajuste que converge puede seguir teniendo sesgo o errores predictivos importantes.'
 ],[],['mae_origen_seleccion','residuos_sarimax'])
 seccion('7. Evaluación retrospectiva',[
  'La prueba contiene cinco emisiones, 140 pares por modelo y 56 fechas. Los objetivos centrales se evalúan desde varias anticipaciones. Se exporta también una métrica con igual peso por fecha.',
- f'El elegido logra MAE {r["MAE_prueba"]:.2f}, una diferencia de {mejora:.2f} % frente al estacional. El menor MAE observado pertenece a {minimo_test.modelo} ({minimo_test.MAE:.2f}); se mantiene la elección de selección.',
+ f'El elegido logra MAE {r["MAE_prueba"]:.2f}, una diferencia de {mejora:.2f} % frente al estacional. {lectura_minimo(False)}',
  f'El sesgo del seleccionado es {sesgo:.2f} pedidos: subpronóstico promedio. RMSE penaliza picos, sMAPE da una lectura relativa y MAE permanece en pedidos. Los errores por horizonte no tienen por qué crecer de forma monótona.'
 ],[(mt[['modelo','MAE','RMSE','sMAPE']],'Prueba: comparación en idénticos pares')],['metricas_horizonte_prueba'])
 seccion('8. Intervalos y cobertura',[
@@ -198,7 +227,7 @@ seccion('8. Intervalos y cobertura',[
 ],[(cd.assign(porcentaje=cd.cobertura*100)[['metodo_intervalo','cubiertos','n','porcentaje','ancho_medio']],'Cobertura diaria (%) y amplitud en pedidos'),
  (cs.assign(porcentaje=cs.cobertura*100)[['metodo_intervalo','cubiertos','n','porcentaje','ancho_medio']],'Cobertura de totales semanales (%)')])
 seccion('9. Pronóstico histórico final',[
- f'Se reajusta {r["ganador"]} hasta 2018-08-21 y se pronostica 2018-08-22 a 2018-09-18. Suma de puntos: {r["total_puntos_28_dias"]:,.2f} pedidos. No es una proyección actual de Olist.',
+ f'Se reajusta {r["ganador"]} hasta el domingo {FIN} y se pronostica del lunes {final_desde} al domingo {final_hasta}: cuatro semanas completas. Suma de puntos: {r["total_puntos_28_dias"]:,.2f} pedidos. No es una proyección actual de Olist.',
  'Los CSV conservan precisión decimal. La suma de puntos no se presenta como media esperada ni mediana garantizada del total. Los reales futuros permanecen desconocidos.',
  'Los intervalos finales son los relativos fijados en el protocolo; su cobertura observada fue insuficiente en prueba. No se presentan como márgenes operativamente validados al 90 %. No se anuncia un intervalo mensual sumando los semanales.'
 ],[(final[['semana','desde','hasta','pred','inferior','superior']],'Totales semanales con intervalos nominales')],['pronostico_final'])
@@ -219,7 +248,7 @@ for s in secciones:
     for t in s['textos']:md += [t,'']
     for df,caption in s['tablas']:md += ['**'+caption+'**','',tabla_md(df),'']
     for fig in s['figuras']:md += [f'![{fig.replace("_"," ")}](figuras/{fig}.png)','']
-(D/'informe.md').write_text('\n'.join(md))
+(D/'informe.md').write_text('\n'.join(md),encoding='utf-8')
 
 # PDF con tipografía Unicode y tablas ajustadas al ancho de la página.
 fontdir=Path('/usr/share/fonts/truetype/dejavu')
@@ -295,11 +324,11 @@ Solución autónoma de los **Módulos 0 y B** del taller de Aprendizaje Automát
 ## Resultados y lectura correcta
 
 - Serie: **{r['n_dias']} días**, {r['total_pedidos']:,} compras, de {r['inicio']} a {r['fin']}.
-- Protocolo: 30 emisiones de selección, 12 de calibración y 5 de prueba. Cada emisión cubre 28 días; los orígenes avanzan semanalmente.
-- Seleccionado: **{r['ganador']}**, MAE {r['MAE_seleccion']:.2f} en selección y {r['MAE_prueba']:.2f} en prueba. Referencia semanal: {r['MAE_estacional_prueba']:.2f} en prueba. {minimo_test.modelo} tiene el menor MAE observado en prueba; se mantiene la elección previa.
-- El objetivo relativo de LightGBM no mejora el promedio en este experimento. La comparación controlada queda documentada con sus resultados.
+- Protocolo: {len(SELECCION)} emisiones de selección, {len(CALIBRACION)} de calibración y {len(PRUEBA)} de prueba. Cada emisión parte de un domingo y cubre 28 días (cuatro semanas lunes–domingo); los orígenes avanzan semanalmente.
+- Seleccionado: **{r['ganador']}**, MAE {r['MAE_seleccion']:.2f} en selección y {r['MAE_prueba']:.2f} en prueba. Referencia semanal: {r['MAE_estacional_prueba']:.2f} en prueba. {lectura_minimo(False)}
+- El objetivo relativo de LightGBM {'no mejora' if relativo_peor else 'no mejora de forma uniforme'} el promedio en este experimento. La comparación controlada queda documentada con sus resultados.
 - **Los intervalos relativos no alcanzan el 90 % nominal:** cobertura diaria {principal.cobertura:.2%} ({int(principal.cubiertos)}/{int(principal.n)}) y semanal {principal_s.cobertura:.1%} ({int(principal_s.cubiertos)}/{int(principal_s.n)}). No se presentan como márgenes operativamente validados al 90 %.
-- Pronóstico histórico del 22 de agosto al 18 de septiembre de 2018: **{r['total_puntos_28_dias']:,.2f}** como suma de puntos. No equivale automáticamente a media esperada o mediana del total.
+- Pronóstico histórico del lunes {final_desde} al domingo {final_hasta}: **{r['total_puntos_28_dias']:,.2f}** como suma de puntos. No equivale automáticamente a media esperada o mediana del total.
 - **Evaluación retrospectiva:** las fechas de prueba ya eran conocidas. No es una nueva prueba ciega ni una proyección actual de Olist.
 
 ## Reproducir
@@ -351,5 +380,5 @@ No incluye módulos A, C o D ni la extensión opcional por categoría/estado. El
 
 La entrega excluye `data/olist.duckdb`, entornos virtuales y cachés. Está preparada para un repositorio; no se ha publicado en GitHub.
 '''
-(ROOT/'README.md').write_text(readme.replace('\n documentacion/','\ndocumentacion/'))
+(ROOT/'README.md').write_text(readme.replace('\n documentacion/','\ndocumentacion/'),encoding='utf-8')
 print('Documentación generada: guía con resultados, informe Markdown/PDF y README.')

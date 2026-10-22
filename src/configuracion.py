@@ -9,12 +9,18 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 INICIO = '2017-02-01'
-FIN = '2018-08-21'
+# Último día con cobertura continua (Módulo 0). La serie se corta en el último
+# domingo <= CORTE (serie_diaria.sql); FIN repite esa regla para el resto del código.
+CORTE = '2018-08-21'
+FIN = str((pd.Timestamp(CORTE) - pd.Timedelta(days=(pd.Timestamp(CORTE).dayofweek + 1) % 7)).date())
 HORIZONTE = 28
 NIVEL = 0.90
-SELECCION = pd.date_range('2017-07-25', '2018-02-13', freq='7D')
-CALIBRACION = pd.date_range('2018-03-13', '2018-05-29', freq='7D')
-PRUEBA = pd.date_range('2018-06-26', '2018-07-24', freq='7D')
+# Orígenes en domingo: cada emisión pronostica 4 semanas lunes-domingo.
+SELECCION = pd.date_range('2017-07-23', '2018-02-11', freq='7D')
+CALIBRACION = pd.date_range('2018-03-11', '2018-05-27', freq='7D')
+PRUEBA = pd.date_range('2018-06-24', '2018-07-22', freq='7D')
+assert all(o.dayofweek == 6 for o in SELECCION.append([CALIBRACION, PRUEBA]))
+assert PRUEBA[-1] + pd.Timedelta(days=HORIZONTE) == pd.Timestamp(FIN)
 
 def particiones():
     """Una fila por emisión; una fecha real puede aparecer en varias emisiones."""

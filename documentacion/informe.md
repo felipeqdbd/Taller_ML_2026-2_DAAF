@@ -4,11 +4,11 @@ Módulos 0 y B · horizonte 28 días · evaluación semanal retrospectiva
 
 ## 1. Problema y protocolo
 
-Pronosticar órdenes recibidas por día durante los siguientes 28 días, desde el cierre de cada martes. Alcance: Módulo 0 y Módulo B. La unidad es la orden; la fecha es la compra. El conteo incluye todos los estados finales.
+Pronosticar órdenes recibidas por día durante los siguientes 28 días, desde el cierre de cada domingo: cada emisión cubre cuatro semanas completas de lunes a domingo. Alcance: Módulo 0 y Módulo B. La unidad es la orden; la fecha es la compra. El conteo incluye todos los estados finales.
 
-Período útil: 2017-02-01 a 2018-08-21. El corte responde a cobertura y no demuestra una causa específica para la caída de registros al final. Toda la evaluación es retrospectiva: las fechas de prueba ya eran conocidas.
+Período útil: 2017-02-01 a 2018-08-19. La cobertura continua llega a 2018-08-21; la serie se corta en el último domingo anterior o igual a esa fecha. El corte responde a cobertura y no demuestra una causa específica para la caída de registros al final. Toda la evaluación es retrospectiva: las fechas de prueba ya eran conocidas.
 
-Selección: SARIMAX_calendario, MAE 43.11. Prueba: MAE 65.82, frente a 67.02 de la referencia semanal. La cobertura diaria relativa fue 76.4%, inferior al 90 % nominal.
+Selección: SARIMAX_calendario, MAE 42.01. Prueba: MAE 61.72, frente a 66.42 de la referencia semanal. La cobertura diaria relativa fue 75.7%, inferior al 90 % nominal.
 
 Los modelos se reajustan en cada emisión. Los objetivos no se cruzan entre etapas; dentro de cada una se solapan las ventanas. No se considera que todos los pares sean independientes.
 
@@ -16,9 +16,9 @@ Los modelos se reajustan en cada emisión. Los objetivos no se cruzan entre etap
 
 | Etapa | Objetivos desde | Objetivos hasta | Emisiones |
 | --- | --- | --- | --- |
-| Selección | 2017-07-26 | 2018-03-13 | 30 |
-| Calibración | 2018-03-14 | 2018-06-26 | 12 |
-| Prueba | 2018-06-27 | 2018-08-21 | 5 |
+| Selección | 2017-07-24 | 2018-03-11 | 30 |
+| Calibración | 2018-03-12 | 2018-06-24 | 12 |
+| Prueba | 2018-06-25 | 2018-08-19 | 5 |
 
 ![protocolo temporal](figuras/protocolo_temporal.png)
 
@@ -26,9 +26,11 @@ Los modelos se reajustan en cada emisión. Los objetivos no se cruzan entre etap
 
 Se consulta DuckDB en modo de solo lectura. SQL realiza lecturas, uniones, filtros, agregaciones y ventanas de datos. La serie nace de orders sin multiplicar compras mediante artículos ni pagos.
 
-El calendario diario completo representa ceros si falta actividad dentro del intervalo. Se obtienen 567 días y 97.590 órdenes; la auditoría concilia sus valores. Las fechas extremas se inspeccionan antes de definir el universo del ejercicio.
+El calendario diario completo representa ceros si falta actividad dentro del intervalo. Se obtienen 565 días y 97,091 órdenes; la auditoría concilia sus valores. Las fechas extremas se inspeccionan antes de definir el universo del ejercicio.
 
 EDA común: mediana de entrega 10 días, p90 23 y 6.77% tardías en las observaciones elegibles. Los compradores con varias compras son 2,997 de 96,096 identidades únicas. Los atributos finales de entrega no son predictores.
+
+Geografía del cliente (customer_unique_id): El Sudeste reúne 68.4% de los clientes únicos del período útil. La recurrencia va de 2.5 % a 3.2 % según la región, y el segmento de única compra con gasto alto pesa más en Norte (37 %) y Nordeste (32 %) que en Sudeste (21 %).
 
 **Calidad relevante al objetivo**
 
@@ -43,21 +45,23 @@ EDA común: mediana de entrega 10 días, p90 23 y 6.77% tardías en las observac
 
 ![serie diaria](figuras/serie_diaria.png)
 
+![segmentos region](figuras/segmentos_region.png)
+
 ## 3. Diagnóstico temporal inicial
 
-Se estudian solo 175 días, hasta 2017-07-25. Las medias móviles SQL terminan en la fecha observada. El patrón semanal se resume por medias y medianas; no se interpreta causalmente.
+Se estudian solo 173 días, hasta 2017-07-23. Las medias móviles SQL terminan en la fecha observada. El patrón semanal se resume por medias y medianas; no se interpreta causalmente.
 
 STL robusta con período 7 separa tendencia, semana y residuo para descripción. Sus componentes no se usan como variables porque la descomposición puede utilizar vecinos posteriores dentro del tramo.
 
-ADF y KPSS parten de hipótesis distintas. Nivel: ADF no rechaza raíz unitaria y KPSS rechaza estacionariedad. Diferencia semanal: ADF rechaza y KPSS no rechaza. Las pruebas orientan; no determinan un único modelo.
+ADF y KPSS parten de hipótesis distintas. Nivel: ADF no rechaza raíz unitaria y KPSS rechaza estacionariedad. Diferencia semanal: ADF rechaza raíz unitaria y KPSS no rechaza estacionariedad. Las pruebas orientan; no determinan un único modelo.
 
 **Pruebas de estacionariedad**
 
 | serie | ADF_p | KPSS_limite |
 | --- | --- | --- |
-| nivel | 0.710938 | <= 0.01 |
-| diferencia_1 | 4.71204e-06 | 0.0417 |
-| diferencia_7 | 0.00176203 | >= 0.10 |
+| nivel | 0.715181 | <= 0.01 |
+| diferencia_1 | 5.46658e-06 | >= 0.10 |
+| diferencia_7 | 0.0018408 | >= 0.10 |
 
 ![acf pacf inicial](figuras/acf_pacf_inicial.png)
 
@@ -85,9 +89,9 @@ Objetivo relativo: log(1+y)-log(1+media28). Inversión: exp(r)*(1+media28)-1, us
 
 | h | lag_0 | media_28 | ultimo_mismo_dia | media_4_mismo_dia |
 | --- | --- | --- | --- | --- |
-| 1 | 153 | 128.39 | 153 | 142.75 |
-| 7 | 153 | 128.39 | 153 | 158.75 |
-| 28 | 153 | 128.39 | 153 | 158.75 |
+| 1 | 105 | 124.75 | 168 | 125.25 |
+| 7 | 105 | 124.75 | 105 | 105.25 |
+| 28 | 105 | 124.75 | 105 | 105.25 |
 
 ## 5. Candidatos y selección
 
@@ -97,35 +101,35 @@ Las cuatro variantes LightGBM cruzan variables básicas/ampliadas y objetivo abs
 
 Se elige SARIMAX_calendario por MAE en 840 pares. Los días difíciles permanecen. Black Friday 2017 tiene 1.176 pedidos y no había un evento anterior para estimar su magnitud; varios de los mayores errores corresponden a esa fecha.
 
-Los avisos de ajuste se registran; ningún ajuste sin convergencia se acepta. En el primer SARIMAX, Ljung–Box p7=0.0539 y p14=0.2208; no demostrar autocorrelación al 5 % no prueba adecuación universal.
+Los avisos de ajuste se registran; ningún ajuste sin convergencia se acepta. En el primer SARIMAX, Ljung–Box p7=0.0527 y p14=0.2261; no demostrar autocorrelación al 5 % no prueba adecuación universal.
 
 **Selección: menor es mejor**
 
 | modelo | MAE | RMSE | sMAPE |
 | --- | --- | --- | --- |
-| SARIMAX_calendario | 43.11 | 92.22 | 20.58 |
-| LGBM_amplio_absoluto | 51.15 | 102.38 | 23.59 |
-| LGBM_base_absoluto | 51.61 | 103.38 | 23.67 |
-| ETS_amortiguado | 53.64 | 104.96 | 24.78 |
-| Estacional_7 | 56.64 | 122.94 | 25.74 |
-| Ingenuo | 58.82 | 101.80 | 27.86 |
-| LGBM_amplio_relativo | 64.34 | 132.02 | 26.66 |
-| LGBM_base_relativo | 66.56 | 139.19 | 26.90 |
+| SARIMAX_calendario | 42.01 | 91.51 | 20.32 |
+| LGBM_base_absoluto | 48.22 | 99.56 | 22.95 |
+| LGBM_amplio_absoluto | 49.98 | 103.13 | 23.50 |
+| Estacional_7 | 56.39 | 122.85 | 25.68 |
+| LGBM_base_relativo | 57.58 | 116.57 | 25.85 |
+| LGBM_amplio_relativo | 58.32 | 118.78 | 25.76 |
+| ETS_amortiguado | 60.62 | 137.07 | 24.91 |
+| Ingenuo | 64.33 | 109.72 | 34.12 |
 
 **Factores ML: diferencia negativa favorece al candidato**
 
 | comparacion | diferencia_MAE | origenes_mejora |
 | --- | --- | --- |
-| Variables con objetivo absoluto | -0.46 | 13 |
-| Variables con objetivo relativo | -2.23 | 17 |
-| Objetivo con variables básicas | 14.96 | 12 |
-| Objetivo con variables ampliadas | 13.19 | 13 |
+| Variables con objetivo absoluto | 1.76 | 11 |
+| Variables con objetivo relativo | 0.74 | 17 |
+| Objetivo con variables básicas | 9.36 | 13 |
+| Objetivo con variables ampliadas | 8.34 | 13 |
 
 ## 6. Variación entre períodos y errores
 
 Las diferencias por origen importan: un promedio puede ocultar episodios malos. Las emisiones solapadas no se tratan como observaciones independientes para declarar significancia estadística.
 
-Las variables ampliadas ayudan modestamente al ML absoluto, pero el objetivo relativo empeora el promedio en esta ejecución. Esa conclusión está limitada a candidatos, configuración y protocolo evaluados.
+Con objetivo absoluto, pasar a variables ampliadas aumenta el MAE en 1.76 pedidos (mejora en 11 de 30 orígenes); el objetivo relativo empeora el promedio en esta ejecución. Esa conclusión está limitada a candidatos, configuración y protocolo evaluados.
 
 El calendario informa la fecha de un evento, no su magnitud. Se conserva la huelga y no se proporciona un indicador futuro que simule conocimiento previo. Las comparaciones de eventos son descriptivas.
 
@@ -139,22 +143,22 @@ Ljung–Box y la ACF residual examinan estructura remanente. Un ajuste que conve
 
 La prueba contiene cinco emisiones, 140 pares por modelo y 56 fechas. Los objetivos centrales se evalúan desde varias anticipaciones. Se exporta también una métrica con igual peso por fecha.
 
-El elegido logra MAE 65.82, una diferencia de 1.79 % frente al estacional. El menor MAE observado pertenece a ETS_amortiguado (65.08); se mantiene la elección de selección.
+El elegido logra MAE 61.72, una diferencia de 7.08 % frente al estacional. El seleccionado también presenta el menor MAE de prueba; esa coincidencia no se usó para elegirlo.
 
-El sesgo del seleccionado es -43.36 pedidos: subpronóstico promedio. RMSE penaliza picos, sMAPE da una lectura relativa y MAE permanece en pedidos. Los errores por horizonte no tienen por qué crecer de forma monótona.
+El sesgo del seleccionado es -37.80 pedidos: subpronóstico promedio. RMSE penaliza picos, sMAPE da una lectura relativa y MAE permanece en pedidos. Los errores por horizonte no tienen por qué crecer de forma monótona.
 
 **Prueba: comparación en idénticos pares**
 
 | modelo | MAE | RMSE | sMAPE |
 | --- | --- | --- | --- |
-| ETS_amortiguado | 65.08 | 80.50 | 31.01 |
-| SARIMAX_calendario | 65.82 | 81.29 | 31.26 |
-| LGBM_base_absoluto | 67.01 | 82.35 | 31.61 |
-| Estacional_7 | 67.02 | 84.60 | 32.40 |
-| LGBM_amplio_absoluto | 67.32 | 83.09 | 31.93 |
-| Ingenuo | 68.22 | 84.07 | 31.49 |
-| LGBM_base_relativo | 69.31 | 86.53 | 33.12 |
-| LGBM_amplio_relativo | 70.43 | 86.43 | 33.43 |
+| SARIMAX_calendario | 61.72 | 76.21 | 29.76 |
+| ETS_amortiguado | 62.47 | 75.74 | 29.90 |
+| Estacional_7 | 66.42 | 84.58 | 32.56 |
+| LGBM_base_absoluto | 67.24 | 82.08 | 32.47 |
+| LGBM_base_relativo | 68.45 | 85.41 | 33.07 |
+| LGBM_amplio_absoluto | 69.64 | 85.18 | 33.66 |
+| LGBM_amplio_relativo | 71.68 | 88.65 | 34.99 |
+| Ingenuo | 77.61 | 94.06 | 37.69 |
 
 ![metricas horizonte prueba](figuras/metricas_horizonte_prueba.png)
 
@@ -166,25 +170,25 @@ Relativo: |real-pred|/(1+pred); margen q*(1+pred). Absoluto: |real-pred|; margen
 
 Para totales se suman primero reales y puntos y luego se calibra el error del total. No se suman límites diarios. No hay garantía de cobertura conjunta de todos los días o semanas.
 
-El relativo cubre 76.4% diario y 80.0% semanal: no alcanza el 90 % nominal. La dependencia, poca muestra y reajustes impiden atribuir una garantía conformal exacta. Las amplitudes y coberturas deben leerse juntas.
+El relativo cubre 75.7% diario y 80.0% semanal: no alcanza el 90 % nominal. La dependencia, poca muestra y reajustes impiden atribuir una garantía conformal exacta. Las amplitudes y coberturas deben leerse juntas.
 
 **Cobertura diaria (%) y amplitud en pedidos**
 
 | metodo_intervalo | cubiertos | n | porcentaje | ancho_medio |
 | --- | --- | --- | --- | --- |
-| absoluto | 123 | 140 | 87.86 | 230.59 |
-| relativo | 107 | 140 | 76.43 | 202.46 |
+| absoluto | 121 | 140 | 86.43 | 211.95 |
+| relativo | 106 | 140 | 75.71 | 195.32 |
 
 **Cobertura de totales semanales (%)**
 
 | metodo_intervalo | cubiertos | n | porcentaje | ancho_medio |
 | --- | --- | --- | --- | --- |
-| absoluto | 19 | 20 | 95.00 | 1,812.88 |
-| relativo | 16 | 20 | 80.00 | 1,578.66 |
+| absoluto | 17 | 20 | 85.00 | 1,511.46 |
+| relativo | 16 | 20 | 80.00 | 1,574.71 |
 
 ## 9. Pronóstico histórico final
 
-Se reajusta SARIMAX_calendario hasta 2018-08-21 y se pronostica 2018-08-22 a 2018-09-18. Suma de puntos: 6,460.58 pedidos. No es una proyección actual de Olist.
+Se reajusta SARIMAX_calendario hasta el domingo 2018-08-19 y se pronostica del lunes 2018-08-20 al domingo 2018-09-16: cuatro semanas completas. Suma de puntos: 7,126.27 pedidos. No es una proyección actual de Olist.
 
 Los CSV conservan precisión decimal. La suma de puntos no se presenta como media esperada ni mediana garantizada del total. Los reales futuros permanecen desconocidos.
 
@@ -194,10 +198,10 @@ Los intervalos finales son los relativos fijados en el protocolo; su cobertura o
 
 | semana | desde | hasta | pred | inferior | superior |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 2018-08-22 | 2018-08-28 | 1,619.98 | 972.03 | 2,267.92 |
-| 2 | 2018-08-29 | 2018-09-04 | 1,625.55 | 454.05 | 2,797.05 |
-| 3 | 2018-09-05 | 2018-09-11 | 1,589.51 | 623.55 | 2,555.47 |
-| 4 | 2018-09-12 | 2018-09-18 | 1,625.55 | 614.30 | 2,636.80 |
+| 1 | 2018-08-20 | 2018-08-26 | 1,787.51 | 1,092.16 | 2,482.85 |
+| 2 | 2018-08-27 | 2018-09-02 | 1,792.85 | 685.92 | 2,899.77 |
+| 3 | 2018-09-03 | 2018-09-09 | 1,753.07 | 520.88 | 2,985.25 |
+| 4 | 2018-09-10 | 2018-09-16 | 1,792.85 | 647.62 | 2,938.07 |
 
 ![pronostico final](figuras/pronostico_final.png)
 
