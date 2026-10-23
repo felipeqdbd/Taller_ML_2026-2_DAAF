@@ -21,6 +21,17 @@ CALIBRACION = pd.date_range('2018-03-11', '2018-05-27', freq='7D')
 PRUEBA = pd.date_range('2018-06-24', '2018-07-22', freq='7D')
 assert all(o.dayofweek == 6 for o in SELECCION.append([CALIBRACION, PRUEBA]))
 assert PRUEBA[-1] + pd.Timedelta(days=HORIZONTE) == pd.Timestamp(FIN)
+# Episodios que calendario.sql no incluye. Sirven para describir días y medir
+# errores; no son regresores. previsible = la fecha se conocía de antemano.
+# pre_navidad solo se observó en diciembre de 2017 (objetivo de selección), por eso
+# no se convierte en indicador. Solo se listan fechas anteriores a la prueba: los
+# partidos posteriores de Brasil en el Mundial caen en prueba y no se examinan.
+EPISODIOS = pd.DataFrame([
+    ('pre_navidad', '2017-12-14', '2017-12-23', True),
+    ('huelga_camioneros', '2018-05-21', '2018-05-31', False),
+    ('mundial_brasil', '2018-06-17', '2018-06-17', True),
+    ('mundial_brasil', '2018-06-22', '2018-06-22', True),
+], columns=['evento', 'desde', 'hasta', 'previsible'])
 
 def particiones():
     """Una fila por emisión; una fecha real puede aparecer en varias emisiones."""

@@ -1,3 +1,14 @@
+-- ============================================================================
+-- cobertura.sql
+-- Propósito:   Cobertura temporal mes a mes, para elegir el período útil.
+-- Operaciones:
+--   1. Toma el primer y el último mes con compras.
+--   2. Genera todos los meses entre ambos, incluidos los meses sin compras.
+--   3. Cuenta órdenes, días con compras y primera/última compra de cada mes.
+--   4. Une calendario y conteos con LEFT JOIN; un mes sin compras queda en cero.
+-- Parámetros:  ninguno.
+-- Salida:      una fila por mes.
+-- ============================================================================
 -- Se incluyen meses sin compras para no ocultar huecos como noviembre de 2016.
 WITH limites AS (
  SELECT date_trunc('month',min(order_purchase_timestamp)) inicio,

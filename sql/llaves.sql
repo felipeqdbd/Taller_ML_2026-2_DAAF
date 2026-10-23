@@ -1,3 +1,13 @@
+-- ============================================================================
+-- llaves.sql
+-- Propósito:   Unicidad de la llave candidata de cada tabla (granularidad).
+-- Operaciones:
+--   1. Para cada tabla cruda cuenta filas, valores distintos de su llave candidata,
+--      repetidos (filas - distintos) y nulos en la llave.
+--   2. Une los resultados de las nueve tablas con UNION ALL.
+-- Parámetros:  ninguno.
+-- Salida:      una fila por tabla: tabla, llave_candidata, filas, distintos, repetidos, nulos.
+-- ============================================================================
 -- Repetidos en reviews/prefijos requieren interpretar granularidad.
 SELECT 'orders' tabla, 'order_id' llave_candidata, count(*) filas, count(DISTINCT order_id) distintos, count(*)-count(DISTINCT order_id) repetidos, count(*) FILTER(WHERE order_id IS NULL) nulos FROM orders
 UNION ALL

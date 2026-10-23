@@ -11,17 +11,19 @@ def metricas(predicciones,grupos=('modelo',)):
     d['cuadrado']=(d.real-d.pred)**2
     den=abs(d.real)+abs(d.pred)
     d['smape']=200*d.absoluto/den.where(den.ne(0),1)
+    # MAPE no está definido con real=0; en las ventanas evaluadas no hay ceros.
+    d['mape']=100*d.absoluto/d.real.where(d.real.ne(0))
     d['sesgo']=d.pred-d.real  # Positivo significa sobrepronóstico.
     g=d.groupby(list(grupos),dropna=False).agg(
-        MAE=('absoluto','mean'),MSE=('cuadrado','mean'),sMAPE=('smape','mean'),
+        MAE=('absoluto','mean'),MSE=('cuadrado','mean'),MAPE=('mape','mean'),sMAPE=('smape','mean'),
         sesgo=('sesgo','mean'),n=('real','size'))
     g['RMSE']=np.sqrt(g.pop('MSE'))
-    return g.reset_index()[[*grupos,'MAE','RMSE','sMAPE','sesgo','n']]
+    return g.reset_index()[[*grupos,'MAE','RMSE','MAPE','sMAPE','sesgo','n']]
 
 def totales_semanales(predicciones):
     """Suma primero los puntos y reales; los intervalos se calibran DESPUÉS.
 
-    Semana 1=h1..7, semana 2=h8..14, etc.: miércoles a martes en este protocolo.
+    Semana 1=h1..7, semana 2=h8..14, etc.: lunes a domingo en este protocolo.
     No se suman límites diarios. Para el futuro, real permanece desconocido.
     """
     with duckdb.connect() as con:

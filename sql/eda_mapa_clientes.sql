@@ -1,7 +1,15 @@
--- Clientes reales por prefijo postal con su coordenada central, para dibujar el mapa.
--- Parámetros: inicio y fin del período útil.
--- geolocation tiene varias filas por prefijo: se promedia por prefijo ANTES de unir
--- y se descartan coordenadas fuera de Brasil (errores de captura de la fuente).
+-- ============================================================================
+-- eda_mapa_clientes.sql
+-- Propósito:   Clientes reales por prefijo postal con su coordenada central (mapa).
+-- Operaciones:
+--   1. Promedia latitud y longitud por prefijo ANTES de unir (geolocation tiene varias
+--      filas por prefijo) y descarta coordenadas fuera de Brasil.
+--   2. Cuenta clientes distintos (customer_unique_id) por prefijo dentro del período útil
+--      y toma el estado más frecuente del prefijo.
+--   3. Une conteos y centroides por prefijo.
+-- Parámetros:  1) inicio del período útil; 2) fin del período útil.
+-- Salida:      una fila por prefijo: prefijo, estado, lat, lng, clientes.
+-- ============================================================================
 WITH centroides AS (
     SELECT geolocation_zip_code_prefix AS prefijo,
            avg(geolocation_lat) AS lat, avg(geolocation_lng) AS lng

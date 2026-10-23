@@ -66,13 +66,17 @@ for etapa,origenes in [('seleccion',SELECCION),('calibracion',CALIBRACION),('pru
         for sufijo,grupos in [('', ['modelo']),('_horizonte',['modelo','h']),('_origen',['modelo','origen'])]:
             cols=','.join(grupos)
             calc=con.sql(f'''SELECT {cols},avg(abs(real-pred)) MAE,
-                sqrt(avg(pow(real-pred,2))) RMSE,
+                sqrt(avg(pow(real-pred,2))) RMSE,avg(100*abs(real-pred)/real) MAPE,
                 avg(CASE WHEN abs(real)+abs(pred)=0 THEN 0 ELSE 200*abs(real-pred)/(abs(real)+abs(pred)) END) sMAPE,
                 avg(pred-real) sesgo,count(*) n FROM p_auditada GROUP BY {cols} ORDER BY {cols}''').df()
             saved=leer(f'metricas{sufijo}_{etapa}', ['origen'] if 'origen' in grupos else [])
             saved=saved.sort_values(grupos).reset_index(drop=True)
             pd.testing.assert_frame_equal(calc[grupos],saved[grupos],check_dtype=False)
-            np.testing.assert_allclose(calc[['MAE','RMSE','sMAPE','sesgo','n']],saved[['MAE','RMSE','sMAPE','sesgo','n']],atol=1e-9)
+            np.testing.assert_allclose(calc[['MAE','RMSE','MAPE','sMAPE','sesgo','n']],saved[['MAE','RMSE','MAPE','sMAPE','sesgo','n']],atol=1e-9)
+        # Solo SARIMAX trae intervalo paramétrico y debe contener a su pronóstico.
+        sx=pred.modelo.str.startswith('SARIMAX')
+        assert pred.loc[~sx,['inferior_param','superior_param']].isna().all().all()
+        assert pred[sx].inferior_param.le(pred[sx].pred+1e-9).all() and pred[sx].pred.le(pred[sx].superior_param+1e-9).all()
         for fila in pred[pred.modelo.isin(['Ingenuo','Estacional_7'])].itertuples():
             fuente=fila.origen if fila.modelo=='Ingenuo' else fila.origen-pd.Timedelta(days=6-(fila.h-1)%7)
             assert fila.pred==y.loc[fuente]
@@ -118,7 +122,14 @@ for year in [2017,2018]:
     g=calendario[calendario.fecha.dt.year.eq(year)]
     esperado=g.fecha.eq(bf).astype(int)
     np.testing.assert_array_equal(g.black_friday,esperado)
-ok('Calendario de Black Friday','Coincide con el día posterior al cuarto jueves de noviembre en el calendario disponible.')
+# Carnaval: lunes y martes, 48 y 47 días antes de la Pascua (construcción independiente).
+from dateutil.easter import easter
+for year in [2017,2018]:
+    pascua=pd.Timestamp(easter(year))
+    g=calendario[calendario.fecha.dt.year.eq(year)]
+    esperado=g.fecha.isin([pascua-pd.Timedelta(days=48),pascua-pd.Timedelta(days=47)]).astype(int)
+    np.testing.assert_array_equal(g.carnaval,esperado)
+ok('Calendario de Black Friday y Carnaval','Black Friday coincide con el día posterior al cuarto jueves de noviembre; Carnaval con Pascua − 48 y − 47 días.')
 
 # Los ejemplos visibles en el notebook deben reflejar exactamente el calendario
 # usado por los modelos y mostrar un festivo futuro sin ventas observadas.
@@ -145,7 +156,7 @@ for corte,etapa in [(SELECCION[0],'seleccion'),(PRUEBA[0],'prueba')]:
         pt,_=predecir(nombre,st.set_index('fecha').y.asfreq('D'),ft,ct,corte)
         saved=preds[etapa].loc[lambda d:d.modelo.eq(nombre)&d.origen.eq(corte)].sort_values('h')
         np.testing.assert_allclose(pt,saved.pred,rtol=1e-7,atol=1e-6)
-ok('Futuro físicamente retirado','Los ocho modelos reproducen sus 28 pronósticos en el primer origen de selección y el primero de prueba.')
+ok('Futuro físicamente retirado',f'Los {len(MODELOS)} modelos reproducen sus 28 pronósticos en el primer origen de selección y el primero de prueba.')
 
 # Auditoría de cuantiles y totales, sin invocar calibrar ni aplicar_intervalos.
 cal=preds['calibracion'].copy();cal['semana']=(cal.h-1)//7+1
@@ -178,7 +189,22 @@ for unidad,archivo,covarchivo in [('diaria','intervalos_diarios_prueba','cobertu
         cov=leer(covarchivo).set_index('metodo_intervalo').loc[metodo]
         assert cov.cubiertos==cubiertos.sum() and cov.n==len(g)
         np.testing.assert_allclose(cov.cobertura,cubiertos.mean())
-ok('Intervalos diarios y totales','16 cuantiles por orden estadístico exacto; límites, sumas y coberturas conciliados sin reutilizar las funciones evaluadas.')
+# Conformal del mejor ML: calibrado con sus propias predicciones de calibración.
+cal_ml=leer('predicciones_calibracion_ml',['origen','fecha']);cal_ml['semana']=(cal_ml.h-1)//7+1
+assert set(cal_ml.modelo)=={r['mejor_ml']} and len(cal_ml)==len(CALIBRACION)*28
+np.testing.assert_array_equal(cal_ml.real,y.reindex(cal_ml.fecha).to_numpy())
+q_ml=leer('cuantiles_intervalos_ml')
+for fila in q_ml.itertuples():
+    g=cal_ml[cal_ml.semana.eq(fila.semana)]
+    ordenados=sorted((abs(g.real-g.pred)/(1+g.pred)).to_list());k=int(np.ceil((len(g)+1)*NIVEL))
+    np.testing.assert_allclose(fila.cuantil,ordenados[k-1],atol=1e-10)
+# Cobertura comparada: el paramétrico se recalcula desde las predicciones guardadas.
+metodos=leer('cobertura_metodos').set_index('metodo_intervalo')
+sx=preds['prueba'][preds['prueba'].modelo.eq('SARIMAX_calendario')]
+dentro=sx.real.between(sx.inferior_param,sx.superior_param)
+np.testing.assert_allclose(metodos.loc['parametrico_sarimax','cobertura'],dentro.mean())
+np.testing.assert_allclose(metodos.loc['relativo','cobertura'],leer('cobertura_diaria').set_index('metodo_intervalo').loc['relativo','cobertura'])
+ok('Intervalos diarios y totales','16 cuantiles por orden estadístico exacto; límites, sumas y coberturas conciliados sin reutilizar las funciones evaluadas. Conformal ML y paramétrico SARIMAX recalculados.')
 
 final=leer('pronostico_diario_28_dias',['fecha','origen'])
 assert len(final)==28 and final.fecha.min()==pd.Timestamp(FIN)+pd.Timedelta(days=1)
@@ -208,14 +234,14 @@ estado=dict(estado='OK',comprobaciones=checks,notebooks=notebooks,
     limite='Comprobaciones específicas y reproducibles; no prueban ausencia universal de errores ni validez futura.')
 (R/'auditoria.json').write_text(json.dumps(estado,ensure_ascii=False,indent=2),encoding='utf-8')
 paquetes=['duckdb','pandas','numpy','matplotlib','statsmodels','lightgbm','scikit-learn',
-          'holidays','nbformat','nbclient','ipykernel','reportlab','kagglehub']
+          'holidays','python-dateutil','geopandas','nbformat','nbclient','ipykernel','reportlab','kagglehub']
 entorno=dict(python=platform.python_version(),paquetes={p:importlib.metadata.version(p) for p in paquetes},
     sha256_script_datos=hashlib.sha256((ROOT/'scripts/build_olist_duckdb.py').read_bytes()).hexdigest())
 (R/'entorno.json').write_text(json.dumps(entorno,indent=2),encoding='utf-8')
 huellas={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(R.glob('*.csv'))}
 (R/'huellas_csv.json').write_text(json.dumps(huellas,indent=2),encoding='utf-8')
 md=['# Auditoría de la solución','',
-    'Se conciliaron resultados mediante SQL y cálculos independientes. Los ocho modelos se reajustaron en dos orígenes retirando físicamente las compras posteriores. Las siguientes comprobaciones terminaron correctamente.','',
+    f'Se conciliaron resultados mediante SQL y cálculos independientes. Los {len(MODELOS)} modelos se reajustaron en dos orígenes retirando físicamente las compras posteriores. Las siguientes comprobaciones terminaron correctamente.','',
     '| Comprobación | Resultado | Evidencia |','|---|---|---|']
 md += [f'| {c["comprobacion"]} | {c["estado"]} | {c["detalle"]} |' for c in checks]
 md += ['', '## Alcance de la evidencia','',

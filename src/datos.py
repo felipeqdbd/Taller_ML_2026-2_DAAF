@@ -19,6 +19,11 @@ def preparar(con, fin=FIN):
     feriados = holidays.country_holidays('BR', years=range(2017,fin_cal.year+1))
     festivos = pd.DataFrame({'fecha':pd.to_datetime(sorted(feriados.keys()))})
     con.register('festivos', festivos)
+    # Carnaval (lunes y martes) no es festivo nacional: holidays lo trae en la
+    # categoría opcional. Se fija con la Pascua, así que se conoce de antemano.
+    opcionales = holidays.country_holidays('BR', years=range(2017,fin_cal.year+1), categories=('optional',))
+    carnavales = pd.DataFrame({'fecha':pd.to_datetime(sorted(d for d,n in opcionales.items() if n=='Carnaval'))})
+    con.register('carnavales', carnavales)
     calendario = consultar(con, 'calendario.sql', [INICIO,str(fin_cal.date())])
     con.register('serie',serie)
     con.register('calendario',calendario)

@@ -1,3 +1,15 @@
+-- ============================================================================
+-- calidad.sql
+-- Propósito:   Inventario de problemas de calidad a nivel de orden.
+-- Operaciones:
+--   1. Suma precio + flete por orden (order_items) y pagos por orden (order_payments)
+--      por separado, para no multiplicar filas.
+--   2. Une ambos totales a orders con LEFT JOIN.
+--   3. Cuenta con FILTER: IDs duplicados, compras sin fecha, entregas o aprobaciones
+--      anteriores a la compra, órdenes sin ítems o sin pagos y diferencias de pago > 2 centavos.
+-- Parámetros:  ninguno.
+-- Salida:      una fila con un conteo por problema.
+-- ============================================================================
 WITH items AS (
  SELECT order_id, sum(price+freight_value) AS total FROM order_items GROUP BY 1
 ), pagos AS (

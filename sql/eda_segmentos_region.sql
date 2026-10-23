@@ -1,6 +1,17 @@
--- Clientes reales (customer_unique_id) por estado, región y segmento descriptivo.
--- Parámetros: inicio y fin del período útil (los mismos de la serie diaria).
--- Pagos se agregan por orden ANTES de unir: order_payments es 1:N y duplicaría órdenes.
+-- ============================================================================
+-- eda_segmentos_region.sql
+-- Propósito:   Clientes reales por región, estado y segmento descriptivo.
+-- Operaciones:
+--   1. Asigna cada estado a su región de Brasil (tabla VALUES).
+--   2. Suma pagos por orden ANTES de unir: order_payments es 1:N y duplicaría órdenes.
+--   3. Agrega por customer_unique_id: estado de la compra más reciente, número de compras
+--      y gasto total dentro del período útil.
+--   4. Segmenta: Recurrente (2+ compras), Única compra con gasto alto (>= percentil 75)
+--      o Única compra con gasto bajo-medio.
+--   5. Cuenta clientes, órdenes y gasto promedio por región, estado y segmento.
+-- Parámetros:  1) inicio del período útil; 2) fin del período útil.
+-- Salida:      una fila por región, estado y segmento.
+-- ============================================================================
 WITH regiones(estado, region) AS (VALUES
     ('AC','Norte'),('AP','Norte'),('AM','Norte'),('PA','Norte'),('RO','Norte'),('RR','Norte'),('TO','Norte'),
     ('AL','Nordeste'),('BA','Nordeste'),('CE','Nordeste'),('MA','Nordeste'),('PB','Nordeste'),

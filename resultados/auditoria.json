@@ -14,7 +14,7 @@
     {
       "comprobacion": "Predicciones y ajustes de seleccion",
       "estado": "OK",
-      "detalle": "6720 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda."
+      "detalle": "7560 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda."
     },
     {
       "comprobacion": "Predicciones y ajustes de calibracion",
@@ -24,7 +24,7 @@
     {
       "comprobacion": "Predicciones y ajustes de prueba",
       "estado": "OK",
-      "detalle": "1120 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda."
+      "detalle": "1260 pares; reales, horizontes, convergencia, métricas SQL y referencias conciliados según corresponda."
     },
     {
       "comprobacion": "Elección reproducible",
@@ -37,9 +37,9 @@
       "detalle": "475 orígenes y 13300 pares: medias, dispersión, rezagos, día comparable y razones conciliados."
     },
     {
-      "comprobacion": "Calendario de Black Friday",
+      "comprobacion": "Calendario de Black Friday y Carnaval",
       "estado": "OK",
-      "detalle": "Coincide con el día posterior al cuarto jueves de noviembre en el calendario disponible."
+      "detalle": "Black Friday coincide con el día posterior al cuarto jueves de noviembre; Carnaval con Pascua − 48 y − 47 días."
     },
     {
       "comprobacion": "Calendario visible en notebooks",
@@ -49,12 +49,12 @@
     {
       "comprobacion": "Futuro físicamente retirado",
       "estado": "OK",
-      "detalle": "Los ocho modelos reproducen sus 28 pronósticos en el primer origen de selección y el primero de prueba."
+      "detalle": "Los 9 modelos reproducen sus 28 pronósticos en el primer origen de selección y el primero de prueba."
     },
     {
       "comprobacion": "Intervalos diarios y totales",
       "estado": "OK",
-      "detalle": "16 cuantiles por orden estadístico exacto; límites, sumas y coberturas conciliados sin reutilizar las funciones evaluadas."
+      "detalle": "16 cuantiles por orden estadístico exacto; límites, sumas y coberturas conciliados sin reutilizar las funciones evaluadas. Conformal ML y paramétrico SARIMAX recalculados."
     },
     {
       "comprobacion": "Pronóstico histórico final",
@@ -69,19 +69,19 @@
   ],
   "notebooks": [
     {
-      "nombre": "00_datos_y_calidad.ipynb",
-      "celdas_codigo": 7,
-      "figuras": 5
+      "nombre": "00_datos.ipynb",
+      "celdas_codigo": 14,
+      "figuras": 8
     },
     {
-      "nombre": "01_exploracion_temporal.ipynb",
-      "celdas_codigo": 8,
-      "figuras": 4
+      "nombre": "B_series_01_exploracion.ipynb",
+      "celdas_codigo": 14,
+      "figuras": 8
     },
     {
-      "nombre": "02_modelado_y_pronostico.ipynb",
-      "celdas_codigo": 17,
-      "figuras": 6
+      "nombre": "B_series_02_modelado.ipynb",
+      "celdas_codigo": 22,
+      "figuras": 9
     }
   ],
   "limite": "Comprobaciones específicas y reproducibles; no prueban ausencia universal de errores ni validez futura."

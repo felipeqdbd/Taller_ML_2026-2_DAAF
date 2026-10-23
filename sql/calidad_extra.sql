@@ -1,3 +1,14 @@
+-- ============================================================================
+-- calidad_extra.sql
+-- Propósito:   Faltantes y relaciones huérfanas entre tablas.
+-- Operaciones:
+--   1. Cada columna es una subconsulta escalar independiente.
+--   2. Cuenta nulos de aprobación, entrega y categoría; productos sin traducción (LEFT JOIN);
+--      clientes y vendedores cuyo prefijo postal no existe en geolocation (NOT EXISTS);
+--      e ítems sin orden, sin producto o sin vendedor.
+-- Parámetros:  ninguno.
+-- Salida:      una fila con un conteo por problema.
+-- ============================================================================
 SELECT
  (SELECT count(*) FROM orders WHERE order_approved_at IS NULL) aprobacion_nula,
  (SELECT count(*) FROM orders WHERE order_delivered_customer_date IS NULL) entrega_nula,

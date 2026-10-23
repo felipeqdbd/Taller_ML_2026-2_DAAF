@@ -2,6 +2,7 @@
 .venv/
 /notebooks/artifacts
 /resultados/
+__pycache__/
 
 # LaTeX sources: keep PDFs only in lectures/ root
 lectures/latex/**/*.pdf

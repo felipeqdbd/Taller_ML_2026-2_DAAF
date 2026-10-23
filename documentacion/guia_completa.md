@@ -38,11 +38,11 @@ No existe una estimación infalible. Buscamos un procedimiento que aprenda del p
 
 
 
-1. [00_datos_y_calidad.ipynb](../notebooks/00_datos_y_calidad.ipynb): qué significa cada tabla, calidad, cobertura y serie diaria.
+1. [00_datos.ipynb](../notebooks/00_datos.ipynb): qué significa cada tabla, calidad, cobertura y serie diaria.
 
-2. [01_exploracion_temporal.ipynb](../notebooks/01_exploracion_temporal.ipynb): separación temporal, tendencia, patrón semanal, STL, ACF/PACF y estacionariedad.
+2. [B_series_01_exploracion.ipynb](../notebooks/B_series_01_exploracion.ipynb): separación temporal, tendencia, patrón semanal, STL, ACF/PACF y estacionariedad.
 
-3. [02_modelado_y_pronostico.ipynb](../notebooks/02_modelado_y_pronostico.ipynb): variables, ocho candidatos, selección, intervalos, prueba y pronóstico.
+3. [B_series_02_modelado.ipynb](../notebooks/B_series_02_modelado.ipynb): variables, nueve candidatos, selección, intervalos, prueba y pronóstico.
 
 4. [informe.md](informe.md) y [informe.pdf](informe.pdf): resultados consolidados de la ejecución.
 
@@ -66,7 +66,7 @@ flowchart TD
 
  D --> E[Variables SQL disponibles en cada origen]
 
- E --> F[Selección entre ocho candidatos]
+ E --> F[Selección entre nueve candidatos]
 
  F --> G[Calibración de intervalos]
 
@@ -208,7 +208,7 @@ En una emisión posterior de prueba se pueden usar las compras de prueba que ya 
 
 
 
-El diagnóstico inicial usa **173 días, hasta el 23 de julio de 2017**. No se usan datos de prueba para justificar órdenes o transformaciones.
+La especificación usa **173 días, hasta el 23 de julio de 2017** (primer origen de selección). Un segundo tramo, hasta el 24 de junio de 2018 (primer origen de prueba), sirve para describir eventos y comprobar que las conclusiones se mantienen, sin reabrir la especificación. La prueba ni siquiera se carga en esa exploración. Pruebas, STL y ACF se calculan sobre `log(1+y)`, la escala en que se ajusta SARIMAX, porque la amplitud semanal crece con el nivel.
 
 
 
@@ -274,7 +274,7 @@ Las hipótesis son distintas: dos pruebas pueden dar resultados que requieren un
 
 
 
-En el tramo inicial, el nivel no supera ambas comprobaciones de estabilidad. La diferencia semanal presenta evidencia más compatible con estabilidad en esas especificaciones. Eso no obliga a aplicar diferencia semanal en todos los candidatos: ETS representa directamente nivel y tendencia, y SARIMAX puede representar la semana mediante regresores.
+En la ventana de especificación, el nivel de `log(1+y)` no es estacionario (ADF no rechaza la raíz unitaria y KPSS rechaza la estacionariedad) y la primera diferencia sí lo es. La diferencia semanal también resulta estacionaria, así que las pruebas no deciden entre ambas. Lo deciden otros indicios: el perfil semanal es estable, la ACF ya no muestra picos semanales tras descontar los indicadores de día y, si se fuerza una diferencia estacional, su MA estimado queda cerca de −1. Por eso SARIMAX usa `d=1`, seis indicadores de día y ninguna diferencia estacional.
 
 
 
@@ -282,7 +282,7 @@ En el tramo inicial, el nivel no supera ambas comprobaciones de estabilidad. La 
 
 
 
-El cálculo de fechas especiales se puede **ver y comprobar** en la sección 7 de [01_exploracion_temporal.ipynb](../notebooks/01_exploracion_temporal.ipynb). Allí se muestran siete fechas concretas y un resumen anual de indicadores. La secuencia técnica es `src/datos.py` (`holidays` para festivos nacionales) → `sql/calendario.sql` (indicadores 0/1) → `sql/features.sql` (unión a cada horizonte) → modelos. En [02_modelado_y_pronostico.ipynb](../notebooks/02_modelado_y_pronostico.ipynb) se muestra la fila h=3 emitida el 21 de noviembre de 2017, cuyo objetivo es Black Friday. El 7 de septiembre de 2018 ya aparece como festivo en el calendario aunque su cantidad de compras esté vacía en la serie seleccionada. La huelga de mayo se conserva como episodio histórico sin indicador de ocurrencia futura.
+El cálculo de fechas especiales se puede **ver y comprobar** en la §3.4 de [B_series_01_exploracion.ipynb](../notebooks/B_series_01_exploracion.ipynb). Allí se muestran ocho fechas concretas y un resumen anual de indicadores. La secuencia técnica es `src/datos.py` (`holidays` para festivos nacionales y Carnaval) → `sql/calendario.sql` (indicadores 0/1) → `sql/features.sql` (unión a cada horizonte) → modelos. En [B_series_02_modelado.ipynb](../notebooks/B_series_02_modelado.ipynb) se muestra la emisión del domingo 19 de noviembre de 2017, cuya fila h=5 tiene como objetivo Black Friday. El 7 de septiembre de 2018 ya aparece como festivo en el calendario aunque su cantidad de compras esté vacía en la serie seleccionada. La huelga de mayo se conserva como episodio histórico sin indicador de ocurrencia futura.
 
 
 
@@ -314,7 +314,7 @@ Los pares reutilizan fechas reales. Tener miles de pares no significa haber obse
 
 | Ventanas básicas | `media_7`, `media_28`, `sd_28` | Nivel medio reciente y dispersión de 28 días |
 
-| Calendario | `h`, día de semana/mes, mes, tendencia, festivo, Black Friday, pos-Black Friday, fin de año | Anticipación y fechas conocidas |
+| Calendario | `h`, día de semana/mes, mes, tendencia, festivo, Carnaval, Black Friday, pos-Black Friday, fin de año | Anticipación y fechas conocidas |
 
 | Última semana completa | `lag_1` a `lag_5`, junto a `lag_0` y `lag_6` | Trayectoria reciente diaria |
 
@@ -350,11 +350,11 @@ El campo `real` es etiqueta, nunca variable predictora. Las características se 
 
 
 
-La auditoría retira físicamente de la consulta todas las compras posteriores a dos orígenes y reproduce las predicciones de los ocho modelos. Es una comprobación efectiva de causalidad temporal en esos casos.
+La auditoría retira físicamente de la consulta todas las compras posteriores a dos orígenes y reproduce las predicciones de los nueve modelos. Es una comprobación efectiva de causalidad temporal en esos casos.
 
 
 
-## 8. Los ocho candidatos y por qué compararlos
+## 8. Los nueve candidatos y por qué compararlos
 
 
 
@@ -362,7 +362,7 @@ La auditoría retira físicamente de la consulta todas las compras posteriores a
 
 
 
-Repite el último valor observado. Si el domingo del origen hubo 150 pedidos, pronostica 150 para los 28 días. Es fácil de explicar, pero ignora la semana y la tendencia.
+Es el primer baseline del taller: repite el último valor observado. Si el domingo del origen hubo 150 pedidos, pronostica 150 para los 28 días. Es fácil de explicar, pero ignora la semana y la tendencia.
 
 
 
@@ -370,7 +370,7 @@ Repite el último valor observado. Si el domingo del origen hubo 150 pedidos, pr
 
 
 
-Repite los últimos siete valores cuatro veces. Si los domingos suelen ser distintos de los lunes, conserva esa diferencia. Es una referencia exigente para un negocio con patrón semanal.
+Es el baseline estacional del taller: cada día futuro toma el valor del mismo día de la semana anterior, es decir, repite los últimos siete valores cuatro veces. Si los domingos suelen ser distintos de los lunes, conserva esa diferencia. Es una referencia exigente para un negocio con patrón semanal.
 
 
 
@@ -382,7 +382,7 @@ Un modelo complejo que no mejora esta referencia merece revisión antes de utili
 
 
 
-ETS representa nivel, tendencia y estacionalidad semanal aditiva. La amortiguación reduce la extrapolación indefinida de la tendencia: el crecimiento reciente no continúa necesariamente con la misma pendiente durante todo el horizonte.
+ETS representa nivel, tendencia y estacionalidad semanal aditiva, ajustados sobre `log(1+y)` y devueltos con `expm1`: una semana aditiva en logaritmos equivale a una semana multiplicativa en pedidos, como mostró la exploración. La amortiguación reduce la extrapolación indefinida de la tendencia: el crecimiento reciente no continúa necesariamente con la misma pendiente durante todo el horizonte.
 
 
 
@@ -402,7 +402,15 @@ La semana se representa mediante seis indicadores de día, con domingo como refe
 
 
 
-Se incluyen festivos nacionales, Black Friday, cuatro días posteriores y fin de año cuando esas variables ya tienen variación en el historial. Si todavía no ocurrió un evento, no puede estimarse su coeficiente. Se evita así simular que conocemos su magnitud por tener una columna de calendario.
+Se incluyen festivos nacionales, Carnaval, Black Friday, cuatro días posteriores y fin de año cuando esas variables ya tienen variación en el historial. Carnaval no es festivo nacional, pero su fecha depende de la Pascua y se conoce de antemano; su efecto ya era visible en febrero de 2017, dentro de la ventana de especificación. Si todavía no ocurrió un evento, no puede estimarse su coeficiente. Se evita así simular que conocemos su magnitud por tener una columna de calendario.
+
+
+
+`SARIMAX_solo_semana` repite la misma estructura sin los indicadores de eventos. No se espera que gane: sirve para medir cuánto aporta modelar los eventos.
+
+
+
+Ambas variantes pronostican de forma **recursiva**: el filtro de Kalman propaga el estado h pasos con el calendario futuro conocido. La varianza de ese pronóstico crece con h y da un **intervalo paramétrico** propio del modelo estadístico, que se compara con los intervalos calibrados (sección 12).
 
 
 
@@ -484,13 +492,15 @@ L1 busca una mediana condicional en el problema ideal, con aproximaciones por ca
 
 
 
-## 10. Qué miden MAE, RMSE, sMAPE y sesgo
+## 10. Qué miden MAE, RMSE, MAPE, sMAPE y sesgo
 
 
 
 - **MAE:** promedio de `|real-pred|`. MAE=40 significa error absoluto promedio de 40 pedidos por par evaluado; no significa error máximo de 40.
 
 - **RMSE:** raíz del promedio de `(real-pred)^2`. Penaliza con mayor fuerza los errores grandes y permanece en pedidos.
+
+- **MAPE:** promedio de `100×|real-pred|/real`. Se puede calcular porque no hay días con cero órdenes en las ventanas evaluadas. Pesa más los días de baja demanda.
 
 - **sMAPE:** promedio de `200×|real-pred|/(|real|+|pred|)`. Aquí se define cero cuando ambos valores son cero. Puede alcanzar 200 %.
 
@@ -506,7 +516,7 @@ Se informa globalmente, por origen, por horizonte y por semana de horizonte. Cad
 
 
 
-Una curva de error no tiene que crecer continuamente con el horizonte. Hay pocas emisiones y diferentes fechas evaluadas. Tampoco se calcula una prueba de significancia que trate los orígenes solapados como independientes.
+La curva por horizonte se lee primero en selección, donde cada h tiene 30 emisiones, y después en prueba, con solo cinco. Una curva de error no tiene que crecer continuamente con el horizonte: hay pocas emisiones y diferentes fechas evaluadas. Siempre se compara contra los dos baselines. Tampoco se calcula una prueba de significancia que trate los orígenes solapados como independientes.
 
 
 
@@ -514,7 +524,7 @@ Una curva de error no tiene que crecer continuamente con el horizonte. Hay pocas
 
 
 
-Se ajustan los ocho candidatos en los 30 orígenes de selección y se calcula MAE sobre sus 840 pares por modelo. Todos tienen el mismo número de objetivos por emisión; por eso promediar los errores de todos los pares equivale a promediar los MAE de los orígenes.
+Se ajustan los nueve candidatos en los 30 orígenes de selección y se calcula MAE sobre sus 840 pares por modelo. Todos tienen el mismo número de objetivos por emisión; por eso promediar los errores de todos los pares equivale a promediar los MAE de los orígenes.
 
 
 
@@ -560,6 +570,14 @@ Los límites son `max(0,pred-margen)` y `pred+margen`. La cobertura empírica cu
 
 
 
+Además se comparan dos intervalos fijados de antemano. El primero es el **paramétrico** de SARIMAX_calendario, construido con la varianza de pronóstico del propio modelo; supone errores normales en log y un modelo bien especificado. El segundo es el mismo conformal relativo calibrado con los errores del **mejor LightGBM** en los mismos 12 orígenes. Ninguno reemplaza al principal por lo que muestre la prueba.
+
+
+
+La huelga cae en calibración y se conserva en el principal. Como sensibilidad descriptiva se informa cuánto cambiarían los cuantiles sin esos días.
+
+
+
 Estos intervalos se inspiran en calibración conformal, pero aquí los residuos dependen del tiempo, se solapan y proceden de modelos reajustados. La corrección de rango no basta para afirmar una garantía exacta. El 90 % es nominal, no una probabilidad individual demostrada para cada día.
 
 
@@ -584,7 +602,11 @@ Los intervalos de cada total semanal tampoco son una garantía conjunta de que l
 
 
 
-## 14. Eventos extraordinarios: conservar y contextualizar
+## 14. Eventos extraordinarios: modelar, marcar o excluir
+
+
+
+La regla se fijó antes de mirar magnitudes. Los eventos previsibles y recurrentes se **modelan** con indicadores de calendario: festivos, Carnaval, Black Friday, sus cuatro días posteriores y fin de año. Los imprevisibles, como la huelga, se **marcan**: se identifican y se mide su error, pero no reciben un indicador futuro. Los artefactos de datos, como el arranque y el truncamiento, se **excluyen**. La semana previa a Navidad mostró una caída que `fin_anio` no cubre, pero solo se observó en diciembre de 2017, que es objetivo de selección. Por eso se documenta como limitación y no se convierte en indicador.
 
 
 
@@ -593,6 +615,10 @@ Black Friday 2017 permanece en la serie. Antes de ese evento, los modelos no tie
 
 
 La huelga de mayo de 2018 se conserva en calibración. Puede elevar los errores y los márgenes. No se entrega un indicador de huelga futura porque no se presume que el evento fuera conocido con 28 días de anticipación.
+
+
+
+El modelado compara el error en cada tipo de día con el de los días sin evento, en selección y en calibración. Así se comprueba si modelar un evento redujo su error y cuánto pesan los episodios marcados.
 
 
 
@@ -640,7 +666,7 @@ La auditoría comprueba conteos y continuidad, fronteras temporales, fechas obje
 
 
 
-También reconstruye la serie hasta dos cortes y reproduce las predicciones de los ocho modelos sin tener compras futuras disponibles. Finalmente reproduce el ajuste final y confirma que los totales semanales coincidan con la suma de puntos diarios.
+También reconstruye la serie hasta dos cortes y reproduce las predicciones de los nueve modelos sin tener compras futuras disponibles. Finalmente reproduce el ajuste final y confirma que los totales semanales coincidan con la suma de puntos diarios.
 
 
 
@@ -673,6 +699,14 @@ Los resultados de estas pruebas respaldan la consistencia de la ejecución; no d
 
 
 **¿Por qué 140 predicciones no son 140 días independientes?** Porque corresponden a 56 fechas, algunas pronosticadas desde varios orígenes, además de la dependencia temporal habitual.
+
+
+
+**¿Recursiva o directa?** SARIMAX y ETS propagan su estado paso a paso. LightGBM aprende cada horizonte directamente desde la información del origen y no reinyecta sus propias predicciones.
+
+
+
+**¿Paramétrico o conformal?** El paramétrico depende de que el modelo esté bien especificado. El conformal depende de que los errores futuros se parezcan a los de calibración. Ninguno garantiza cobertura ante un cambio de régimen.
 
 
 
@@ -718,71 +752,75 @@ El Sudeste reúne 68.4% de los clientes únicos del período útil. La recurrenc
 
 | serie | ADF_p | KPSS_limite | ADF_lectura | KPSS_lectura |
 | --- | --- | --- | --- | --- |
-| nivel | 0.715181 | <= 0.01 | No rechaza raíz unitaria | Rechaza estacionariedad |
-| diferencia_1 | 5.46658e-06 | >= 0.10 | Rechaza raíz unitaria | No rechaza estacionariedad |
-| diferencia_7 | 0.0018408 | >= 0.10 | Rechaza raíz unitaria | No rechaza estacionariedad |
+| nivel | 0.637224 | <= 0.01 | No rechaza raíz unitaria | Rechaza estacionariedad |
+| diferencia_1 | 2.55119e-06 | >= 0.10 | Rechaza raíz unitaria | No rechaza estacionariedad |
+| diferencia_7 | 0.000188447 | >= 0.10 | Rechaza raíz unitaria | No rechaza estacionariedad |
+| diferencia_1_7 | 5.53855e-05 | >= 0.10 | Rechaza raíz unitaria | No rechaza estacionariedad |
 
 En nivel, ADF no rechaza raíz unitaria y KPSS rechaza estacionariedad. En primera diferencia, ADF rechaza raíz unitaria y KPSS no rechaza estacionariedad. En diferencia semanal, ADF rechaza raíz unitaria y KPSS no rechaza estacionariedad. Estas lecturas se restringen al historial inicial y a las especificaciones ensayadas.
 
-En el primer SARIMAX, Ljung–Box arroja p=0.0527 a rezago 7 y p=0.2261 a 14. Al umbral convencional de 5 % no se rechaza en esos dos casos, pero el primero está cerca del umbral. Esto no demuestra residuos independientes ni adecuación universal. Los demás orígenes están registrados en las tablas de ajustes; la convergencia se verificó en todos los ajustes de la ejecución.
+En el primer SARIMAX, Ljung–Box arroja p=0.0273 a rezago 7 y p=0.1297 a 14. En las 30 emisiones de selección, p7 < 0,05 en 21: queda algo de estructura semanal que seis indicadores fijos no absorben. Por eso el intervalo paramétrico, que supone innovaciones independientes, se contrasta con intervalos calibrados empíricamente. La convergencia se verificó en todos los ajustes de la ejecución.
 
 ### 20.3. Selección de candidatos
 
-| modelo | MAE | RMSE | sMAPE |
-| --- | --- | --- | --- |
-| SARIMAX_calendario | 42.01 | 91.51 | 20.32 |
-| LGBM_base_absoluto | 48.22 | 99.56 | 22.95 |
-| LGBM_amplio_absoluto | 49.98 | 103.13 | 23.50 |
-| Estacional_7 | 56.39 | 122.85 | 25.68 |
-| LGBM_base_relativo | 57.58 | 116.57 | 25.85 |
-| LGBM_amplio_relativo | 58.32 | 118.78 | 25.76 |
-| ETS_amortiguado | 60.62 | 137.07 | 24.91 |
-| Ingenuo | 64.33 | 109.72 | 34.12 |
+| modelo | MAE | RMSE | MAPE | sMAPE |
+| --- | --- | --- | --- | --- |
+| SARIMAX_calendario | 42,20 | 91,63 | 20,48 | 20,46 |
+| LGBM_base_absoluto | 48,22 | 99,56 | 24,33 | 22,95 |
+| LGBM_amplio_absoluto | 49,98 | 103,13 | 25,49 | 23,50 |
+| SARIMAX_solo_semana | 51,35 | 102,95 | 25,77 | 24,10 |
+| ETS_amortiguado | 53,28 | 108,18 | 26,66 | 24,50 |
+| Estacional_7 | 56,39 | 122,85 | 29,29 | 25,68 |
+| LGBM_base_relativo | 57,58 | 116,57 | 30,84 | 25,85 |
+| LGBM_amplio_relativo | 58,32 | 118,78 | 31,04 | 25,76 |
+| Ingenuo | 64,33 | 109,72 | 31,36 | 34,12 |
 
-Se elige **SARIMAX_calendario**, MAE **42.01** pedidos por par. El mejor LightGBM es **LGBM_base_absoluto**. El criterio se fijó antes de leer la tabla de prueba.
+Se elige **SARIMAX_calendario**, MAE **42.20** pedidos por par. El mejor LightGBM es **LGBM_base_absoluto**. El criterio se fijó antes de leer la tabla de prueba.
 
-Black Friday domina varios errores extremos: el 24 de noviembre de 2017 hubo 1.176 pedidos. El modelo seleccionado lo pronosticó desde cuatro orígenes y no disponía de un Black Friday anterior en el período útil. Por ejemplo, desde 2017-10-29, a h=26, estimó 134.47, frente a 1176 reales. Su RMSE resulta mucho mayor que MAE porque los errores grandes se elevan al cuadrado. No se elimina esa fecha para embellecer el resultado.
+Black Friday domina varios errores extremos: el 24 de noviembre de 2017 hubo 1.176 pedidos. El modelo seleccionado lo pronosticó desde cuatro orígenes y no disponía de un Black Friday anterior en el período útil. Por ejemplo, desde 2017-10-29, a h=26, estimó 133.89, frente a 1176 reales. Su RMSE resulta mucho mayor que MAE porque los errores grandes se elevan al cuadrado. No se elimina esa fecha para embellecer el resultado.
 
-### 20.4. Lo que aporta cada factor de LightGBM
+### 20.4. Lo que aporta cada componente
 
 | comparacion | diferencia_MAE | origenes_mejora | origenes |
 | --- | --- | --- | --- |
-| Variables con objetivo absoluto | 1.76 | 11 | 30 |
-| Variables con objetivo relativo | 0.74 | 17 | 30 |
-| Objetivo con variables básicas | 9.36 | 13 | 30 |
-| Objetivo con variables ampliadas | 8.34 | 13 | 30 |
+| Variables con objetivo absoluto | 1,76 | 11 | 30 |
+| Variables con objetivo relativo | 0,74 | 17 | 30 |
+| Objetivo con variables básicas | 9,36 | 13 | 30 |
+| Objetivo con variables ampliadas | 8,34 | 13 | 30 |
+| Eventos de calendario en SARIMAX | -9,15 | 20 | 30 |
 
-La diferencia es MAE del candidato menos MAE de la referencia: negativo favorece al candidato. Con objetivo absoluto, pasar a variables ampliadas aumenta el MAE en 1.76 pedidos (mejora en 11 de 30 orígenes); con objetivo relativo, aumenta el MAE en 0.74 pedidos (mejora en 17 de 30 orígenes). Cambiar al objetivo relativo aumenta el MAE en 9.36 pedidos (mejora en 13 de 30 orígenes) con variables básicas y aumenta el MAE en 8.34 pedidos (mejora en 13 de 30 orígenes) con ampliadas. La hipótesis de que escalar respecto al nivel reciente ayudaría no queda respaldada por este experimento.
+La diferencia es MAE del candidato menos MAE de la referencia: negativo favorece al candidato. Añadir los indicadores de eventos a SARIMAX reduce el MAE en 9.15 pedidos (mejora en 20 de 30 orígenes). Con objetivo absoluto, pasar a variables ampliadas aumenta el MAE en 1.76 pedidos (mejora en 11 de 30 orígenes); con objetivo relativo, aumenta el MAE en 0.74 pedidos (mejora en 17 de 30 orígenes). Cambiar al objetivo relativo aumenta el MAE en 9.36 pedidos (mejora en 13 de 30 orígenes) con variables básicas y aumenta el MAE en 8.34 pedidos (mejora en 13 de 30 orígenes) con ampliadas. La hipótesis de que escalar respecto al nivel reciente ayudaría no queda respaldada por este experimento.
 
 Un ejemplo muestra que la adaptación relativa puede fallar de forma importante:
 
 | modelo | real | pred |
 | --- | --- | --- |
-| LGBM_base_absoluto | 59 | 409.53 |
-| LGBM_amplio_absoluto | 59 | 463.53 |
-| LGBM_base_relativo | 59 | 631.97 |
-| LGBM_amplio_relativo | 59 | 669.25 |
+| LGBM_base_absoluto | 59 | 409,53 |
+| LGBM_amplio_absoluto | 59 | 463,53 |
+| LGBM_base_relativo | 59 | 631,97 |
+| LGBM_amplio_relativo | 59 | 669,25 |
 
 Estas son predicciones emitidas el 2017-11-26 para el 2017-12-24. El desacierto relativo es observable; atribuirlo a una sola variable requeriría otra investigación. No se afirma que toda transformación relativa sea inferior en cualquier serie.
 
 ### 20.5. Evaluación retrospectiva
 
-| modelo | MAE | RMSE | sMAPE | sesgo |
-| --- | --- | --- | --- | --- |
-| SARIMAX_calendario | 61.72 | 76.21 | 29.76 | -37.80 |
-| ETS_amortiguado | 62.47 | 75.74 | 29.90 | -39.66 |
-| Estacional_7 | 66.42 | 84.58 | 32.56 | -37.04 |
-| LGBM_base_absoluto | 67.24 | 82.08 | 32.47 | -41.61 |
-| LGBM_base_relativo | 68.45 | 85.41 | 33.07 | -42.07 |
-| LGBM_amplio_absoluto | 69.64 | 85.18 | 33.66 | -43.85 |
-| LGBM_amplio_relativo | 71.68 | 88.65 | 34.99 | -46.13 |
-| Ingenuo | 77.61 | 94.06 | 37.69 | -59.61 |
+| modelo | MAE | RMSE | MAPE | sMAPE | sesgo |
+| --- | --- | --- | --- | --- | --- |
+| ETS_amortiguado | 60,84 | 75,50 | 27,11 | 29,44 | -36,98 |
+| SARIMAX_calendario | 61,50 | 75,96 | 27,42 | 29,68 | -37,23 |
+| SARIMAX_solo_semana | 61,99 | 76,37 | 27,56 | 29,80 | -37,94 |
+| Estacional_7 | 66,42 | 84,58 | 29,83 | 32,56 | -37,04 |
+| LGBM_base_absoluto | 66,75 | 81,52 | 29,79 | 32,20 | -41,19 |
+| LGBM_base_relativo | 69,39 | 86,47 | 30,65 | 33,49 | -41,69 |
+| LGBM_amplio_absoluto | 70,24 | 86,22 | 30,99 | 34,01 | -44,62 |
+| LGBM_amplio_relativo | 71,51 | 88,46 | 31,40 | 34,90 | -45,25 |
+| Ingenuo | 77,61 | 94,06 | 32,33 | 37,69 | -59,61 |
 
-El elegido obtiene MAE **61.72**, frente a **66.42** de la referencia semanal: una diferencia aproximada de **7.08 %**. Es pequeña y no demuestra superioridad general. El seleccionado también presenta el menor MAE de prueba; esa coincidencia no se usó para elegirlo.
+El elegido obtiene MAE **61.50**, frente a **66.42** de la referencia semanal: una diferencia aproximada de **7.41 %**. Es pequeña y no demuestra superioridad general. **ETS_amortiguado** presenta el menor MAE de prueba (60.84), pero no se redefine el ganador usando esa información.
 
-El sesgo del seleccionado es **-37.80 pedidos**: en promedio pronosticó por debajo de lo observado. Su MAE posterior supera al de selección; el desempeño no se trasladó de forma uniforme entre períodos. No puede atribuirse la discrepancia exclusivamente a un evento sin evidencia adicional.
+El sesgo del seleccionado es **-37.23 pedidos**: en promedio pronosticó por debajo de lo observado. Su MAE posterior supera al de selección; el desempeño no se trasladó de forma uniforme entre períodos. No puede atribuirse la discrepancia exclusivamente a un evento sin evidencia adicional.
 
-Las curvas por horizonte tienen solo cinco emisiones en cada h y no son monótonas por obligación. La tabla de igual peso por fecha y los archivos por origen permiten distinguir el efecto del protocolo de una conclusión sobre todos los días futuros.
+En selección, con 30 emisiones por h, el error crece con el horizonte y el seleccionado supera a ambos baselines en las cuatro semanas. Las curvas de prueba tienen solo cinco emisiones en cada h y no son monótonas por obligación. La tabla de igual peso por fecha y los archivos por origen permiten distinguir el efecto del protocolo de una conclusión sobre todos los días futuros.
 
 ### 20.6. Incertidumbre observada y sus límites
 
@@ -790,41 +828,45 @@ Intervalos diarios:
 
 | metodo_intervalo | cubiertos | n | cobertura_porcentaje | ancho_medio |
 | --- | --- | --- | --- | --- |
-| absoluto | 121 | 140 | 86.43 | 211.95 |
-| relativo | 106 | 140 | 75.71 | 195.32 |
+| absoluto | 121 | 140 | 86,43 | 211,65 |
+| relativo | 107 | 140 | 76,43 | 196,54 |
 
 Intervalos de totales semanales:
 
 | metodo_intervalo | cubiertos | n | cobertura_porcentaje | ancho_medio |
 | --- | --- | --- | --- | --- |
-| absoluto | 17 | 20 | 85.00 | 1,511.46 |
-| relativo | 16 | 20 | 80.00 | 1,574.71 |
+| absoluto | 17 | 20 | 85,00 | 1.517,58 |
+| relativo | 16 | 20 | 80,00 | 1.597,96 |
 
-El método relativo principal cubre **75.71%** de los pares diarios, por debajo del 90 % nominal. En totales semanales cubre **80.0%**. **No alcanza el objetivo de cobertura en esta evaluación.** No debe presentarse como un margen validado al 90 % para decisiones operativas.
+El método relativo principal cubre **76.43%** de los pares diarios, por debajo del 90 % nominal. En totales semanales cubre **80.0%**. **No alcanza el objetivo de cobertura en esta evaluación.** No debe presentarse como un margen validado al 90 % para decisiones operativas.
 
 El método absoluto muestra 86.43% diario y 85.0% semanal, con mayor amplitud. Tampoco garantiza cobertura futura. Se conservan ambos resultados y no se elige retrospectivamente el método que mejor lució en prueba.
 
+También se comparan intervalos fijados de antemano para otros enfoques: el paramétrico de SARIMAX cubre 73.6% y el conformal relativo del mejor LightGBM 70.7%. Ninguno alcanza el nominal: la prueba contiene un valle en julio y un salto de nivel en agosto que la calibración no conocía.
+
 El margen relativo se reduce cuando la predicción es baja. El sesgo de subpronóstico observado es compatible con parte de la pérdida de cobertura, pero esta explicación no identifica una causa única. Por semana de horizonte, la cobertura diaria relativa más baja es 65.71%; el promedio global oculta diferencias importantes.
 
-En calibración se conservan los días de huelga:
+Errores de calibración por tipo de día; los días de huelga se conservan:
 
-| periodo | pares | fechas | MAE |
-| --- | --- | --- | --- |
-| Resto de calibración | 292 | 94 | 35.91 |
-| Ventana de huelga | 44 | 11 | 103.44 |
+| evento | pares | fechas | MAE | MAPE | sesgo |
+| --- | --- | --- | --- | --- | --- |
+| huelga_camioneros | 44 | 11 | 103,83 | 81,59 | 103,47 |
+| mundial_brasil | 3 | 2 | 47,26 | 29,13 | -22,47 |
+| sin_evento | 278 | 89 | 36,01 | 15,42 | -11,94 |
+| festivo | 11 | 3 | 27,08 | 13,05 | -15,46 |
 
 Son pares solapados y el período comparado difiere del resto. El mayor error en esa ventana describe el episodio; no estima un efecto causal. Incluirlo reconoce riesgos históricos, aunque no basta para garantizar cobertura ante otros regímenes.
 
 ### 20.7. Pronóstico final e interpretación
 
-Se reajusta SARIMAX_calendario y la suma de sus 28 puntos es **7,126.27 pedidos**. Se presenta como suma de estimaciones puntuales, sin atribuirle automáticamente el significado de media esperada o mediana del total.
+Se reajusta SARIMAX_calendario y la suma de sus 28 puntos es **7,130.89 pedidos**. Se presenta como suma de estimaciones puntuales, sin atribuirle automáticamente el significado de media esperada o mediana del total.
 
 | semana | desde | hasta | pred | inferior | superior |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 2018-08-20 | 2018-08-26 | 1,787.51 | 1,092.16 | 2,482.85 |
-| 2 | 2018-08-27 | 2018-09-02 | 1,792.85 | 685.92 | 2,899.77 |
-| 3 | 2018-09-03 | 2018-09-09 | 1,753.07 | 520.88 | 2,985.25 |
-| 4 | 2018-09-10 | 2018-09-16 | 1,792.85 | 647.62 | 2,938.07 |
+| 1 | 2018-08-20 | 2018-08-26 | 1.789,48 | 1.096,21 | 2.482,74 |
+| 2 | 2018-08-27 | 2018-09-02 | 1.793,84 | 669,25 | 2.918,44 |
+| 3 | 2018-09-03 | 2018-09-09 | 1.753,72 | 503,52 | 3.003,92 |
+| 4 | 2018-09-10 | 2018-09-16 | 1.793,84 | 630,70 | 2.956,99 |
 
 Los rangos son relativos y nominales al 90 %, sujetos al incumplimiento de cobertura observado anteriormente. El período es histórico; no conocemos una cobertura verificada para estas fechas finales dentro del tramo útil. Para una aplicación real, correspondería estudiar nuevos datos y validar una estrategia de calibración antes de tratar estos límites como suficientes.
 
@@ -832,5 +874,5 @@ La importancia por ganancia del mejor LightGBM coloca en sus primeros lugares te
 
 ### 20.8. Resultado de la auditoría
 
-Se completaron **13 grupos de comprobaciones**, incluidos los ocho modelos con futuro físicamente retirado en dos orígenes. Los tres notebooks tienen ejecución secuencial, comentarios, figuras incorporadas y ningún error de celda. La auditoría respalda la consistencia de cifras y procedimientos, no la suficiencia predictiva para cualquier uso.
+Se completaron **13 grupos de comprobaciones**, incluidos los 9 modelos con futuro físicamente retirado en dos orígenes. Los tres notebooks tienen ejecución secuencial, comentarios, figuras incorporadas y ningún error de celda. La auditoría respalda la consistencia de cifras y procedimientos, no la suficiencia predictiva para cualquier uso.
 

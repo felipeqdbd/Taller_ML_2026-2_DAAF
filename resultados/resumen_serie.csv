@@ -1,2 +1,2 @@
-dias,pedidos,minimo,maximo,dias_cero
-565,97091.0,35,1176,0
+desde,hasta,dia_final,dias,pedidos,minimo,maximo,dias_cero
+2017-02-01,2018-08-19,Sunday,565,97091.0,35,1176,0

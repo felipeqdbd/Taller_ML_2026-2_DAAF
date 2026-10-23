@@ -1,3 +1,17 @@
+-- ============================================================================
+-- features.sql
+-- Propósito:   Matriz del modelo ML directo: una fila por origen y horizonte (1 a 28).
+-- Operaciones:
+--   1. historia: rezagos, medias móviles (7/28/91), desviación de 28 días y largo de
+--      historia, con ventanas que terminan en el origen.
+--   2. pares: cruza cada origen con h = 1..28 y exige 91 días completos de historia.
+--   3. Añade el calendario de la fecha objetivo, tendencia, razones entre medias,
+--      valores del mismo día de la semana y rezagos relativos al nivel reciente.
+--   4. Une la serie (LEFT JOIN) solo para la etiqueta real, que nunca es variable.
+-- Parámetros:  1) fecha de inicio para la variable tendencia.
+-- Requiere:    vistas en memoria serie y calendario (con.register).
+-- Salida:      una fila por (origen, h).
+-- ============================================================================
 -- Las ventanas se calculan ANTES del cruce con los 28 horizontes.
 -- lag_0 es el conteo del origen, que ya se conoce al cierre del día.
 -- Los 91 días completos dan la misma muestra a las cuatro variantes ML.
@@ -18,7 +32,7 @@ WITH historia AS (
  ((7-(h%7))%7)::INTEGER desplazamiento
  FROM historia CROSS JOIN range(1,29) t(h) WHERE n_historia=91
 )
-SELECT p.*, c.dia_semana,c.dia_mes,c.mes,c.festivo,c.black_friday,
+SELECT p.*, c.dia_semana,c.dia_mes,c.mes,c.festivo,c.carnaval,c.black_friday,
  c.post_black_friday,c.fin_anio,
  date_diff('day',CAST(? AS DATE),p.fecha) tendencia,
  s.y AS real,

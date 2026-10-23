@@ -1,3 +1,13 @@
+-- ============================================================================
+-- eda_distribuciones.sql
+-- Propósito:   Histogramas del tiempo de entrega y del retraso.
+-- Operaciones:
+--   1. Para órdenes entregadas calcula días compra -> entrega y días entrega - estimada.
+--   2. Asigna cada orden a un intervalo con CASE, con un número de grupo para ordenar.
+--   3. Cuenta órdenes por tipo (Entrega / Retraso) e intervalo.
+-- Parámetros:  ninguno.
+-- Salida:      una fila por tipo e intervalo: tipo, grupo, intervalo, ordenes.
+-- ============================================================================
 -- Las distribuciones se calculan por día calendario y solo para entregadas.
 WITH base AS (
  SELECT date_diff('day',order_purchase_timestamp::DATE,order_delivered_customer_date::DATE) entrega,

@@ -1,8 +1,9 @@
 """Modelos comparables: una emisión al cierre del origen, 28 predicciones.
 
-Todos usan únicamente etiquetas conocidas. El ML es directo global: aprende
-una función de historia, calendario y horizonte; no introduce ventas reales
-de los días intermedios ni alimenta recursivamente sus propias predicciones.
+Todos usan únicamente etiquetas conocidas. ETS y SARIMAX pronostican de forma
+recursiva (propagan su estado h pasos). El ML es directo global: aprende una
+función de historia, calendario y horizonte; no introduce ventas reales de los
+días intermedios ni alimenta recursivamente sus propias predicciones.
 """
 import warnings
 import duckdb
@@ -12,9 +13,9 @@ from lightgbm import LGBMRegressor
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.stats.diagnostic import acorr_ljungbox
-from .configuracion import HORIZONTE
+from .configuracion import HORIZONTE, NIVEL
 
-CALENDARIO = ['h','dia_semana','dia_mes','mes','tendencia','festivo',
+CALENDARIO = ['h','dia_semana','dia_mes','mes','tendencia','festivo','carnaval',
               'black_friday','post_black_friday','fin_anio']
 BASICAS = ['lag_0','lag_6','lag_13','lag_27','media_7','media_28','sd_28'] + CALENDARIO
 AMPLIAS = BASICAS + [f'lag_{i}' for i in range(1,6)] + [
@@ -24,7 +25,9 @@ AMPLIAS = BASICAS + [f'lag_{i}' for i in range(1,6)] + [
 CONFIG_ML = dict(objective='regression_l1', learning_rate=0.03,
     num_leaves=7,n_estimators=300,min_child_samples=40,reg_lambda=1.0,
     random_state=2026,n_jobs=1,deterministic=True,force_col_wise=True,verbosity=-1)
-MODELOS = ['Ingenuo','Estacional_7','ETS_amortiguado','SARIMAX_calendario',
+# Eventos de calendario que se modelan (decisión de B_series_01_exploracion, §3.3).
+EVENTOS = ['festivo','carnaval','black_friday','post_black_friday','fin_anio']
+MODELOS = ['Ingenuo','Estacional_7','ETS_amortiguado','SARIMAX_solo_semana','SARIMAX_calendario',
            'LGBM_base_absoluto','LGBM_amplio_absoluto',
            'LGBM_base_relativo','LGBM_amplio_relativo']
 
@@ -48,10 +51,49 @@ def exogenas(calendario):
     No se usa un indicador de huelga futura: su ocurrencia no se conocía con
     cuatro semanas de antelación. Sus días permanecen en todas las métricas.
     """
-    x=calendario.set_index('fecha')[['festivo','black_friday','post_black_friday','fin_anio']].copy()
+    x=calendario.set_index('fecha')[EVENTOS].copy()
     for dia in range(1,7):
         x[f'dia_{dia}']=(x.index.dayofweek==dia-1).astype(int)
     return x.astype(float).asfreq('D')
+
+def _sarimax(historia, x, origen, info, detalles):
+    """ARIMA(1,1,1) sobre log1p con regresores conocidos; devuelve puntos e intervalo.
+
+    El intervalo paramétrico supone errores normales en log y un modelo bien
+    especificado; se transforma con expm1, que es monótona.
+    """
+    pasado=x.loc[historia.index]
+    # Un evento aún no observado no permite estimar su coeficiente.
+    columnas=pasado.columns[pasado.nunique()>1]
+    pasado=pasado[columnas]
+    modelo=SARIMAX(np.log1p(historia),exog=pasado,
+        order=(1,1,1),seasonal_order=(0,0,0,0),trend='n',
+        enforce_stationarity=True,enforce_invertibility=True)
+    fit=modelo.fit(disp=False,maxiter=300)
+    # Secuencia de optimizadores fijada por anticipado, no por MAE.
+    info['optimizador']='lbfgs'
+    if not fit.mle_retvals.get('converged',False):
+        fit=modelo.fit(start_params=fit.params,method='bfgs',disp=False,maxiter=500)
+        info['optimizador']='bfgs'
+    info['convergencia']=bool(fit.mle_retvals.get('converged',False))
+    info['AIC']=float(fit.aic)
+    info['regresores']=', '.join(columnas)
+    fechas=pd.date_range(origen+pd.Timedelta(days=1),periods=HORIZONTE)
+    # Pronóstico recursivo: el filtro propaga el estado h pasos con el calendario futuro.
+    fc=fit.get_forecast(HORIZONTE,exog=x.loc[fechas,columnas])
+    limites=np.expm1(np.asarray(fc.conf_int(alpha=1-NIVEL)))
+    info['inferior_param']=np.maximum(limites[:,0],0).tolist()
+    info['superior_param']=limites[:,1].tolist()
+    # Diagnóstico descriptivo de innovaciones después de inicialización.
+    resid=fit.filter_results.standardized_forecasts_error[0]
+    resid=resid[max(28,fit.loglikelihood_burn):]
+    lb=acorr_ljungbox(resid,lags=[7,14],model_df=2,return_df=True)
+    info['Ljung_Box_p7']=float(lb.lb_pvalue.iloc[0])
+    info['Ljung_Box_p14']=float(lb.lb_pvalue.iloc[1])
+    if detalles:
+        info['residuos']=resid.tolist()
+        info['coeficientes']=fit.params.to_dict()
+    return np.expm1(np.asarray(fc.predicted_mean))
 
 def predecir(nombre, y, variables, calendario, origen, detalles=False):
     """Devuelve predicciones y metadatos de ajuste; recorta negativos a cero.
@@ -70,40 +112,18 @@ def predecir(nombre, y, variables, calendario, origen, detalles=False):
         elif nombre=='Estacional_7':
             pred=np.tile(historia.iloc[-7:].to_numpy(),HORIZONTE//7)
         elif nombre=='ETS_amortiguado':
-            fit=ExponentialSmoothing(historia,trend='add',damped_trend=True,
+            # En log1p la semana aditiva equivale a una semana multiplicativa en pedidos.
+            fit=ExponentialSmoothing(np.log1p(historia),trend='add',damped_trend=True,
                 seasonal='add',seasonal_periods=7,initialization_method='estimated').fit()
             info['convergencia']=bool(fit.mle_retvals.get('success',True))
             info['AIC']=float(fit.aic)
-            pred=fit.forecast(HORIZONTE).to_numpy()
+            pred=np.expm1(fit.forecast(HORIZONTE).to_numpy())
+        elif nombre=='SARIMAX_solo_semana':
+            # Misma estructura sin eventos: mide cuánto aporta modelarlos.
+            x=exogenas(calendario).drop(columns=EVENTOS)
+            pred=_sarimax(historia,x,origen,info,detalles)
         elif nombre=='SARIMAX_calendario':
-            x=exogenas(calendario)
-            pasado=x.loc[historia.index]
-            # Un evento aún no observado no permite estimar su coeficiente.
-            columnas=pasado.columns[pasado.nunique()>1]
-            pasado=pasado[columnas]
-            modelo=SARIMAX(np.log1p(historia),exog=pasado,
-                order=(1,1,1),seasonal_order=(0,0,0,0),trend='n',
-                enforce_stationarity=True,enforce_invertibility=True)
-            fit=modelo.fit(disp=False,maxiter=300)
-            # Secuencia de optimizadores fijada por anticipado, no por MAE.
-            info['optimizador']='lbfgs'
-            if not fit.mle_retvals.get('converged',False):
-                fit=modelo.fit(start_params=fit.params,method='bfgs',disp=False,maxiter=500)
-                info['optimizador']='bfgs'
-            info['convergencia']=bool(fit.mle_retvals.get('converged',False))
-            info['AIC']=float(fit.aic)
-            info['regresores']=', '.join(columnas)
-            fechas=pd.date_range(origen+pd.Timedelta(days=1),periods=HORIZONTE)
-            pred=np.expm1(fit.get_forecast(HORIZONTE,exog=x.loc[fechas,columnas]).predicted_mean)
-            # Diagnóstico descriptivo de innovaciones después de inicialización.
-            resid=fit.filter_results.standardized_forecasts_error[0]
-            resid=resid[max(28,fit.loglikelihood_burn):]
-            lb=acorr_ljungbox(resid,lags=[7,14],model_df=2,return_df=True)
-            info['Ljung_Box_p7']=float(lb.lb_pvalue.iloc[0])
-            info['Ljung_Box_p14']=float(lb.lb_pvalue.iloc[1])
-            if detalles:
-                info['residuos']=resid.tolist()
-                info['coeficientes']=fit.params.to_dict()
+            pred=_sarimax(historia,exogenas(calendario),origen,info,detalles)
         elif nombre.startswith('LGBM_'):
             train,future=matrices(variables,origen)
             columnas=AMPLIAS if '_amplio_' in nombre else BASICAS
@@ -139,8 +159,12 @@ def evaluar(y,variables,calendario,origenes,nombres):
         assert np.isfinite(real).all()
         for nombre in nombres:
             pred,info=predecir(nombre,y,variables,calendario,origen)
+            # Solo SARIMAX trae intervalo paramétrico; los demás quedan en NaN.
+            vacio=[np.nan]*HORIZONTE
             filas.append(pd.DataFrame(dict(modelo=nombre,origen=origen,fecha=fechas,
-                h=np.arange(1,HORIZONTE+1),real=real,pred=pred)))
+                h=np.arange(1,HORIZONTE+1),real=real,pred=pred,
+                inferior_param=info.pop('inferior_param',vacio),
+                superior_param=info.pop('superior_param',vacio))))
             ajustes.append(info)
         print(f'{origen.date()}: {len(nombres)} modelos, {HORIZONTE} horizontes.',flush=True)
     return pd.concat(filas,ignore_index=True),pd.DataFrame(ajustes)
