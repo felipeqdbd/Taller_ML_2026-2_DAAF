@@ -1,0 +1,12 @@
+{
+  "modelo": "SARIMAX_calendario",
+  "origen": "2017-07-23",
+  "n_dias": 173,
+  "convergencia": true,
+  "avisos": "",
+  "optimizador": "lbfgs",
+  "AIC": -57.90402807720636,
+  "regresores": "festivo, carnaval, dia_1, dia_2, dia_3, dia_4, dia_5, dia_6",
+  "Ljung_Box_p7": 0.027309681870684617,
+  "Ljung_Box_p14": 0.12968947802600622
+}

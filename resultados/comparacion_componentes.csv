@@ -1,0 +1,6 @@
+comparacion,referencia,candidato,diferencia_MAE,origenes_mejora,origenes
+Variables con objetivo absoluto,LGBM_base_absoluto,LGBM_amplio_absoluto,1.759245525196245,11,30
+Variables con objetivo relativo,LGBM_base_relativo,LGBM_amplio_relativo,0.7369931249496199,17,30
+Objetivo con variables básicas,LGBM_base_absoluto,LGBM_base_relativo,9.36131716412934,13,30
+Objetivo con variables ampliadas,LGBM_amplio_absoluto,LGBM_amplio_relativo,8.339064763882716,13,30
+Eventos de calendario en SARIMAX,SARIMAX_solo_semana,SARIMAX_calendario,-9.150631456123328,20,30

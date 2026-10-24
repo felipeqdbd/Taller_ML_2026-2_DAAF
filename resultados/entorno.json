@@ -1,0 +1,21 @@
+{
+  "python": "3.13.12",
+  "paquetes": {
+    "duckdb": "2.0.0",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3",
+    "matplotlib": "3.11.2",
+    "statsmodels": "0.15.0",
+    "lightgbm": "4.7.0",
+    "scikit-learn": "1.9.1",
+    "holidays": "0.107",
+    "python-dateutil": "2.9.0.post0",
+    "geopandas": "1.2.0",
+    "nbformat": "5.11.1",
+    "nbclient": "0.11.0",
+    "ipykernel": "7.3.0",
+    "reportlab": "5.0.1",
+    "kagglehub": "1.0.2"
+  },
+  "sha256_script_datos": "283c982a8eb0d1060ec1184962258528d162c2d3cc72f4f93761a269fa1ba7ee"
+}

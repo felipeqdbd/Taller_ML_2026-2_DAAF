@@ -1,0 +1,23 @@
+{
+  "inicio": "2017-02-01",
+  "fin": "2018-08-19",
+  "ganador": "SARIMAX_calendario",
+  "mejor_ml": "LGBM_base_absoluto",
+  "MAE_seleccion": 42.20096866159216,
+  "MAE_prueba": 61.50183373386616,
+  "MAE_estacional_seleccion": 56.391666666666666,
+  "MAE_estacional_prueba": 66.42142857142858,
+  "mejor_prueba": "ETS_amortiguado",
+  "cobertura_diaria": 0.7642857142857142,
+  "cubiertos_diarios": 107,
+  "n_diarios": 140,
+  "cobertura_semanal": 0.8,
+  "cubiertos_semanales": 16,
+  "n_semanales": 20,
+  "cobertura_parametrica": 0.7357142857142858,
+  "cobertura_conformal_ml": 0.7071428571428572,
+  "total_puntos_28_dias": 7130.885506919751,
+  "n_dias": 565,
+  "total_pedidos": 97091,
+  "interpretacion": "Retrospectiva; los datos de prueba ya eran conocidos. Sin garantía de cobertura futura."
+}

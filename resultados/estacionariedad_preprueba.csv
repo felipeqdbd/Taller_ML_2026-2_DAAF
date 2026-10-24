@@ -1,0 +1,5 @@
+serie,transformacion,n,ADF_estadistico,ADF_p,KPSS_estadistico,KPSS_p_tabla,KPSS_limite,ADF_lectura,KPSS_lectura,conclusion
+nivel,log1p,509,-2.4005712394197123,0.14157524549142447,3.1456337881074097,0.01,<= 0.01,No rechaza raíz unitaria,Rechaza estacionariedad,no estacionaria
+diferencia_1,log1p,508,-7.263955131842487,1.6536095693505305e-10,0.10015799468955289,0.1,>= 0.10,Rechaza raíz unitaria,No rechaza estacionariedad,estacionaria
+diferencia_7,log1p,502,-6.063772286713358,1.1952535833560846e-07,0.029731340836634316,0.1,>= 0.10,Rechaza raíz unitaria,No rechaza estacionariedad,estacionaria
+diferencia_1_7,log1p,501,-9.05567258922203,4.708964178993902e-15,0.08028484121551471,0.1,>= 0.10,Rechaza raíz unitaria,No rechaza estacionariedad,estacionaria

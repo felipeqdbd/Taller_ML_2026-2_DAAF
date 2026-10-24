@@ -1,0 +1,12 @@
+tipo,grupo,intervalo,ordenes
+Entrega,1,0-2 días,3504
+Entrega,2,3-7 días,27190
+Entrega,3,8-14 días,37979
+Entrega,4,15-21 días,16170
+Entrega,5,22-30 días,7333
+Entrega,6,Más de 30 días,4294
+Retraso,1,A tiempo/antes,89936
+Retraso,2,1-3 días tarde,1870
+Retraso,3,4-7 días tarde,1802
+Retraso,4,8-14 días tarde,1478
+Retraso,5,Más de 14 días tarde,1384
