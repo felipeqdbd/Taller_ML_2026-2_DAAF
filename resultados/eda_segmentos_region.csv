@@ -1,0 +1,82 @@
+region,estado,segmento,clientes,ordenes,gasto_promedio
+Centro-Oeste,DF,Recurrente,60,122.0,244.81
+Centro-Oeste,DF,Única compra · gasto alto,489,489.0,401.94
+Centro-Oeste,DF,Única compra · gasto bajo-medio,1486,1486.0,91.33
+Centro-Oeste,GO,Recurrente,62,129.0,282.82
+Centro-Oeste,GO,Única compra · gasto alto,488,488.0,406.53
+Centro-Oeste,GO,Única compra · gasto bajo-medio,1365,1365.0,93.21
+Centro-Oeste,MS,Recurrente,18,39.0,317.12
+Centro-Oeste,MS,Única compra · gasto alto,191,191.0,455.24
+Centro-Oeste,MS,Única compra · gasto bajo-medio,482,482.0,92.15
+Centro-Oeste,MT,Recurrente,29,60.0,287.7
+Centro-Oeste,MT,Única compra · gasto alto,271,271.0,448.45
+Centro-Oeste,MT,Única compra · gasto bajo-medio,558,558.0,95.49
+Nordeste,AL,Recurrente,12,24.0,520.77
+Nordeste,AL,Única compra · gasto alto,147,147.0,450.46
+Nordeste,AL,Única compra · gasto bajo-medio,237,237.0,100.6
+Nordeste,BA,Recurrente,92,193.0,355.71
+Nordeste,BA,Única compra · gasto alto,870,870.0,415.26
+Nordeste,BA,Única compra · gasto bajo-medio,2276,2276.0,94.73
+Nordeste,CE,Recurrente,24,50.0,328.74
+Nordeste,CE,Única compra · gasto alto,436,436.0,427.72
+Nordeste,CE,Única compra · gasto bajo-medio,832,832.0,97.44
+Nordeste,MA,Recurrente,17,40.0,392.65
+Nordeste,MA,Única compra · gasto alto,244,244.0,403.13
+Nordeste,MA,Única compra · gasto bajo-medio,450,450.0,101.09
+Nordeste,PB,Recurrente,13,30.0,445.47
+Nordeste,PB,Única compra · gasto alto,200,200.0,509.12
+Nordeste,PB,Única compra · gasto bajo-medio,298,298.0,108.76
+Nordeste,PE,Recurrente,36,81.0,434.55
+Nordeste,PE,Única compra · gasto alto,499,499.0,398.34
+Nordeste,PE,Única compra · gasto bajo-medio,1050,1050.0,100.33
+Nordeste,PI,Recurrente,10,22.0,422.99
+Nordeste,PI,Única compra · gasto alto,167,167.0,423.94
+Nordeste,PI,Única compra · gasto bajo-medio,296,296.0,106.27
+Nordeste,RN,Recurrente,11,22.0,354.42
+Nordeste,RN,Única compra · gasto alto,164,164.0,413.64
+Nordeste,RN,Única compra · gasto bajo-medio,287,287.0,99.36
+Nordeste,SE,Recurrente,10,20.0,392.65
+Nordeste,SE,Única compra · gasto alto,115,115.0,429.39
+Nordeste,SE,Única compra · gasto bajo-medio,209,209.0,102.59
+Norte,AC,Recurrente,3,6.0,373.74
+Norte,AC,Única compra · gasto alto,32,32.0,426.13
+Norte,AC,Única compra · gasto bajo-medio,40,40.0,97.77
+Norte,AM,Recurrente,3,8.0,658.87
+Norte,AM,Única compra · gasto alto,43,43.0,392.53
+Norte,AM,Única compra · gasto bajo-medio,97,97.0,93.93
+Norte,AP,Recurrente,1,2.0,605.83
+Norte,AP,Única compra · gasto alto,26,26.0,437.21
+Norte,AP,Única compra · gasto bajo-medio,40,40.0,107.24
+Norte,PA,Recurrente,24,50.0,296.72
+Norte,PA,Única compra · gasto alto,345,345.0,439.99
+Norte,PA,Única compra · gasto bajo-medio,564,564.0,98.08
+Norte,RO,Recurrente,11,24.0,326.99
+Norte,RO,Única compra · gasto alto,96,96.0,448.14
+Norte,RO,Única compra · gasto bajo-medio,131,131.0,103.66
+Norte,RR,Recurrente,1,2.0,763.25
+Norte,RR,Única compra · gasto alto,17,17.0,409.11
+Norte,RR,Única compra · gasto bajo-medio,25,25.0,85.65
+Norte,TO,Recurrente,7,14.0,341.42
+Norte,TO,Única compra · gasto alto,90,90.0,450.31
+Norte,TO,Única compra · gasto bajo-medio,174,174.0,102.82
+Sudeste,ES,Recurrente,57,126.0,329.37
+Sudeste,ES,Única compra · gasto alto,452,452.0,374.45
+Sudeste,ES,Única compra · gasto bajo-medio,1428,1428.0,91.43
+Sudeste,MG,Recurrente,321,677.0,306.96
+Sudeste,MG,Única compra · gasto alto,2504,2504.0,389.47
+Sudeste,MG,Única compra · gasto bajo-medio,8166,8166.0,92.41
+Sudeste,RJ,Recurrente,407,858.0,333.05
+Sudeste,RJ,Única compra · gasto alto,2983,2983.0,386.28
+Sudeste,RJ,Única compra · gasto bajo-medio,8739,8739.0,92.72
+Sudeste,SP,Recurrente,1254,2648.0,290.14
+Sudeste,SP,Única compra · gasto alto,7685,7685.0,381.83
+Sudeste,SP,Única compra · gasto bajo-medio,30232,30232.0,83.99
+Sul,PR,Recurrente,135,280.0,337.18
+Sul,PR,Única compra · gasto alto,1047,1047.0,408.94
+Sul,PR,Única compra · gasto bajo-medio,3579,3579.0,89.73
+Sul,RS,Recurrente,161,343.0,328.38
+Sul,RS,Única compra · gasto alto,1221,1221.0,382.32
+Sul,RS,Única compra · gasto bajo-medio,3791,3791.0,91.71
+Sul,SC,Recurrente,96,200.0,463.93
+Sul,SC,Única compra · gasto alto,847,847.0,394.2
+Sul,SC,Única compra · gasto bajo-medio,2520,2520.0,90.64

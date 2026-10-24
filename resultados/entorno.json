@@ -1,5 +1,5 @@
 {
-  "python": "3.13.15",
+  "python": "3.13.12",
   "paquetes": {
     "duckdb": "2.0.0",
     "pandas": "3.0.6",
@@ -17,5 +17,5 @@
     "reportlab": "5.0.1",
     "kagglehub": "1.0.2"
   },
-  "sha256_script_datos": "b3c7b3e0add7944d870eb8449b544fa719bf0b802111ce769594fcfd2c2f961d"
+  "sha256_script_datos": "283c982a8eb0d1060ec1184962258528d162c2d3cc72f4f93761a269fa1ba7ee"
 }

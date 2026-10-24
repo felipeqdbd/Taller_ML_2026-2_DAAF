@@ -1,0 +1,16 @@
+region,segmento,clientes,pct_region,gasto_promedio
+Centro-Oeste,Recurrente,169.0,3.1,273.82
+Centro-Oeste,Única compra · gasto alto,1439.0,26.2,419.33
+Centro-Oeste,Única compra · gasto bajo-medio,3891.0,70.8,92.69
+Nordeste,Recurrente,225.0,2.5,386.8
+Nordeste,Única compra · gasto alto,2842.0,31.6,422.57
+Nordeste,Única compra · gasto bajo-medio,5935.0,65.9,98.6
+Norte,Recurrente,50.0,2.8,351.5
+Norte,Única compra · gasto alto,649.0,36.7,437.88
+Norte,Única compra · gasto bajo-medio,1071.0,60.5,99.2
+Sudeste,Recurrente,2039.0,3.2,302.45
+Sudeste,Única compra · gasto alto,13624.0,21.2,383.96
+Sudeste,Única compra · gasto bajo-medio,48565.0,75.6,87.2
+Sul,Recurrente,392.0,2.9,364.61
+Sul,Única compra · gasto alto,3115.0,23.3,394.5
+Sul,Única compra · gasto bajo-medio,9890.0,73.8,90.72
