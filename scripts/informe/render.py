@@ -308,6 +308,11 @@ def markdown(bs, tablas, ref):
         if tipo == 'portada':
             datos = dict(x.split(':', 1) for x in cont)
             md += [f'# {datos["titulo"].strip()}', '', f'*{datos["subtitulo"].strip()}*', '']
+            for etiqueta in ('Autores', 'Profesor', 'Curso', 'Programa', 'Institución', 'Fecha'):
+                valor = datos.get(etiqueta)
+                if valor:
+                    md += [f'**{etiqueta}:** {valor.strip()}  ']
+            md += ['']
         elif tipo == 'h1':
             md += [f'## {cont}', '']
         elif tipo == 'h2':
