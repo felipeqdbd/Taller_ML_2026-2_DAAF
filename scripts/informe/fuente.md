@@ -1,7 +1,7 @@
 <!-- Fuente del informe. Las cifras se escriben como {{clave}} y salen de contexto.py. -->
 <!-- Figuras: ::: figura archivo | alto en cm | pie. Tablas: ::: tabla clave | título | nota. -->
 
-::: portada rotulo: Taller de Aprendizaje Automático · Módulo B · Series de tiempo | titulo: Pronóstico diario de órdenes de Olist a 28 días | subtitulo: Formulación, validación con origen móvil e intervalos de predicción para la planeación semanal | Autores: [Nombres de los integrantes del grupo] | Profesor: [Nombre del profesor] | Curso: Aprendizaje Automático, semestre 2026-2 | Programa: [Programa de maestría] | Institución: [Institución] | Fecha: {{fecha_hoy}}
+::: portada rotulo: Taller de Aprendizaje Automático · Módulo B · Series de tiempo | titulo: Pronóstico diario de órdenes de Olist a 28 días | subtitulo: Formulación, validación con origen móvil e intervalos de predicción para la planeación semanal | Autores: Daniel Ospina Pajoy ; Anlly Carolina Tabares Bedoya ; Albeiro Ceballos Cordoba ; Luis Felipe Quesada Bedoya | Profesor: Andres Vasquez Restrepo | Curso: Aprendizaje Automático, semestre 2026-2 | Programa: Msc. Ciencias de la ingeniería / Msc. Ciencia de los datos | Institución: Universidad EAFIT | Fecha: {{fecha_hoy}}
 
 ::: indice
 
